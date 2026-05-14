@@ -4,6 +4,7 @@ from discord.ext import commands, tasks
 import random
 import json
 import os
+import time
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -93,6 +94,7 @@ async def on_message(message):
             )
 
             current_answer = None
+            daily_cooldown = {}
 
     await bot.process_commands(message)
 
@@ -189,7 +191,7 @@ async def ranking(interaction: discord.Interaction):
             embed.set_footer(text=f"あなたの順位: {i+1}位 ({count}個)")
             break
 
-    await ctx.send(embed=embed)
+    await interaction.response.send_message(embed=embed)
 
 # ===== 所持金 =====
 @bot.tree.command(name="money", description="所持金を見る")
@@ -203,6 +205,45 @@ async def money_cmd(interaction: discord.Interaction):
         title="💰 所持金",
         description=f"{interaction.user.mention} の残高: {money[user]}コイン",
         color=discord.Color.green()
+    )
+
+    await interaction.response.send_message(embed=embed)
+
+# ===== デイリー =====
+@bot.tree.command(name="daily", description="1日1回コインを受け取る")
+async def daily(interaction: discord.Interaction):
+    user = str(interaction.user)
+    now = time.time()
+
+    # 24時間チェック
+    if user in daily_cooldown:
+        remaining = 86400 - (now - daily_cooldown[user])
+
+        if remaining > 0:
+            hours = int(remaining // 3600)
+            minutes = int((remaining % 3600) // 60)
+
+            await interaction.response.send_message(
+                f"⏳ まだ受け取れません！\nあと {hours}時間 {minutes}分",
+                ephemeral=True
+            )
+            return
+
+    reward = random.randint(100, 300)
+
+    if user not in money:
+        money[user] = 0
+
+    money[user] += reward
+    daily_cooldown[user] = now
+
+    with open("money.json", "w", encoding="utf-8") as f:
+        json.dump(money, f, ensure_ascii=False, indent=4)
+
+    embed = discord.Embed(
+        title="🎁 デイリーボーナス",
+        description=f"{reward}コイン獲得！",
+        color=discord.Color.gold()
     )
 
     await interaction.response.send_message(embed=embed)
