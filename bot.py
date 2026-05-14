@@ -1,4 +1,5 @@
 import discord
+from discord import app_commands
 from discord.ext import commands, tasks
 import random
 import json
@@ -111,9 +112,9 @@ async def auto_spawn():
             await channel.send(countries[country]["image"])
 
 # ===== コレクション =====
-@bot.command()
-async def collection(ctx):
-    user = str(ctx.author)
+@bot.tree.command(name="collection", description="コレクションを見る")
+async def collection(interaction: discord.Interaction):
+    user = str(interaction.user)
 
     if user not in collections or not collections[user]:
         embed = discord.Embed(
@@ -121,7 +122,7 @@ async def collection(ctx):
             description="まだ何も持っていません",
             color=discord.Color.red()
         )
-        await ctx.send(embed=embed)
+        await interaction.response.send_message(embed=embed)
         return
 
     from collections import Counter
@@ -132,7 +133,7 @@ async def collection(ctx):
     lines = [f"{countries[k]['name']} ×{v}" for k, v in count.items()]
 
     embed = discord.Embed(
-        title=f"📦 {ctx.author.name} のコレクション",
+        title=f"📦 {interaction.user.name} のコレクション",
         description="\n".join(lines),
         color=discord.Color.blue()
     )
@@ -157,13 +158,13 @@ async def collection(ctx):
 
     embed.set_footer(text=f"種類数: {len(count)} / 総数: {len(owned)}")
 
-    await ctx.send(embed=embed)
+    await interaction.response.send_message(embed=embed)
 
 # ===== ランキング =====
-@bot.command()
-async def ranking(ctx):
+@bot.tree.command(name="ranking", description="ランキングを見る")
+async def ranking(interaction: discord.Interaction):
     if not collections:
-        await ctx.send("まだ誰も集めていません")
+        await interaction.response.send_message("まだ誰も集めていません")
         return
 
     ranking_data = [(user, len(items)) for user, items in collections.items()]
@@ -182,7 +183,7 @@ async def ranking(ctx):
         color=discord.Color.gold()
     )
 
-    user_name = str(ctx.author)
+    user_name = str(interaction.user)
     for i, (user, count) in enumerate(ranking_data):
         if user == user_name:
             embed.set_footer(text=f"あなたの順位: {i+1}位 ({count}個)")
@@ -191,25 +192,28 @@ async def ranking(ctx):
     await ctx.send(embed=embed)
 
 # ===== 所持金 =====
-@bot.command()
-async def money_cmd(ctx):
-    user = str(ctx.author)
+@bot.tree.command(name="money", description="所持金を見る")
+async def money_cmd(interaction: discord.Interaction):
+    user = str(interaction.user)
 
     if user not in money:
         money[user] = 0
 
     embed = discord.Embed(
         title="💰 所持金",
-        description=f"{ctx.author.mention} の残高: {money[user]}コイン",
+        description=f"{interaction.user.mention} の残高: {money[user]}コイン",
         color=discord.Color.green()
     )
 
-    await ctx.send(embed=embed)
+    await interaction.response.send_message(embed=embed)
 
 # ===== 起動時 =====
 @bot.event
 async def on_ready():
+    await bot.tree.sync()
+
     print(f"ログインしました: {bot.user}")
+
     auto_spawn.start()
 
 # ===== 起動 =====
