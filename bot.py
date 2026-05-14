@@ -5,11 +5,25 @@ import random
 import json
 import os
 import time
+from flask import Flask
+from threading import Thread
 
 intents = discord.Intents.default()
 intents.message_content = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
+app = Flask('')
+
+@app.route('/')
+def home():
+    return "Bot is running!"
+
+def run():
+    app.run(host='0.0.0.0', port=10000)
+
+def keep_alive():
+    t = Thread(target=run)
+    t.start()
 
 # ===== 国データ =====
 countries = {
@@ -258,4 +272,6 @@ async def on_ready():
     auto_spawn.start()
 
 # ===== 起動 =====
+keep_alive()
+
 bot.run(os.getenv("TOKEN"))
