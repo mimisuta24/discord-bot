@@ -44,7 +44,8 @@ CREATE TABLE IF NOT EXISTS collections (
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS money (
     user TEXT PRIMARY KEY,
-    coins INTEGER
+    coins INTEGER,
+    last_daily REAL
 )
 """)
 
@@ -296,10 +297,41 @@ async def daily(interaction: discord.Interaction):
     user = str(interaction.user)
     now = time.time()
 
-    # クールダウン
-    if user in daily_cooldown:
+    # データ取得
+    cursor.execute(
+        "SELECT coins, last_daily FROM money WHERE user = ?",
+        (user,)
+    )
 
-        remaining = 86400 - (now - daily_cooldown[user])
+    result = cursor.fetchone()
+
+    # 初回
+    if result is None:
+
+        reward = random.randint(100, 300)
+
+        cursor.execute(
+            "INSERT INTO money (user, coins, last_daily) VALUES (?, ?, ?)",
+            (user, reward, now)
+        )
+
+        conn.commit()
+
+        embed = discord.Embed(
+            title="🎁 デイリーボーナス",
+            description=f"{reward}コイン獲得！",
+            color=discord.Color.gold()
+        )
+
+        await interaction.response.send_message(embed=embed)
+        return
+
+    coins, last_daily = result
+
+    # 24時間チェック
+    if last_daily is not None:
+
+        remaining = 86400 - (now - last_daily)
 
         if remaining > 0:
 
@@ -313,34 +345,16 @@ async def daily(interaction: discord.Interaction):
 
             return
 
+    # 報酬
     reward = random.randint(100, 300)
+    new_coins = coins + reward
 
     cursor.execute(
-        "SELECT coins FROM money WHERE user = ?",
-        (user,)
+        "UPDATE money SET coins = ?, last_daily = ? WHERE user = ?",
+        (new_coins, now, user)
     )
 
-    result = cursor.fetchone()
-
-    if result is None:
-
-        cursor.execute(
-            "INSERT INTO money (user, coins) VALUES (?, ?)",
-            (user, reward)
-        )
-
-    else:
-
-        new_money = result[0] + reward
-
-        cursor.execute(
-            "UPDATE money SET coins = ? WHERE user = ?",
-            (new_money, user)
-        )
-
     conn.commit()
-
-    daily_cooldown[user] = now
 
     embed = discord.Embed(
         title="🎁 デイリーボーナス",
