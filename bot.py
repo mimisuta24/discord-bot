@@ -1,17 +1,15 @@
+```python
 import discord
 from discord import app_commands
 from discord.ext import commands, tasks
 import random
-import json
 import os
 import time
+import sqlite3
 from flask import Flask
 from threading import Thread
 
-intents = discord.Intents.default()
-intents.message_content = True
-
-bot = commands.Bot(command_prefix="!", intents=intents)
+# ===== Flask =====
 app = Flask('')
 
 @app.route('/')
@@ -25,6 +23,34 @@ def keep_alive():
     t = Thread(target=run)
     t.start()
 
+# ===== Discord設定 =====
+intents = discord.Intents.default()
+intents.message_content = True
+
+bot = commands.Bot(command_prefix="!", intents=intents)
+
+# ===== SQLite =====
+conn = sqlite3.connect("data.db")
+cursor = conn.cursor()
+
+# コレクションテーブル
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS collections (
+    user TEXT,
+    country TEXT
+)
+""")
+
+# お金テーブル
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS money (
+    user TEXT PRIMARY KEY,
+    coins INTEGER
+)
+""")
+
+conn.commit()
+
 # ===== 国データ =====
 countries = {
     "japan": {
@@ -32,21 +58,25 @@ countries = {
         "aliases": ["japan", "日本", "にほん", "にっぽん"],
         "image": "https://cdn.discordapp.com/attachments/1501419834913587220/1501559919487484055/by_fune.png"
     },
+
     "usa": {
         "name": "アメリカ",
         "aliases": ["usa", "america", "アメリカ", "米国", "あめりか"],
         "image": "https://flagcdn.com/w320/us.png"
     },
+
     "france": {
         "name": "フランス",
         "aliases": ["france", "フランス", "ふらんす"],
         "image": "https://cdn.discordapp.com/attachments/1501412582412521675/1501412628482887822/by_saito.png"
     },
+
     "germany": {
         "name": "ドイツ",
         "aliases": ["germany", "ドイツ", "どいつ"],
         "image": "https://flagcdn.com/w320/de.png"
     },
+
     "china": {
         "name": "中国",
         "aliases": ["china", "ちゅうごく", "中国"],
@@ -54,21 +84,9 @@ countries = {
     }
 }
 
-# ===== データ保存 =====
-if os.path.exists("collections.json"):
-    with open("collections.json", "r", encoding="utf-8") as f:
-        collections = json.load(f)
-else:
-    collections = {}
-
-# ===== お金データ =====
-if os.path.exists("money.json"):
-    with open("money.json", "r", encoding="utf-8") as f:
-        money = json.load(f)
-else:
-    money = {}
-
+# ===== 変数 =====
 current_answer = None
+daily_cooldown = {}
 
 # ===== メッセージ処理 =====
 @bot.event
@@ -82,33 +100,47 @@ async def on_message(message):
         aliases = countries[current_answer]["aliases"]
 
         if message.content.strip().lower() in [a.lower() for a in aliases]:
+
             user = str(message.author)
 
-            if user not in collections:
-                collections[user] = []
+            # ===== コレクション保存 =====
+            cursor.execute(
+                "INSERT INTO collections (user, country) VALUES (?, ?)",
+                (user, current_answer)
+            )
 
-            collections[user].append(current_answer)
-
-            # コレクション保存
-            with open("collections.json", "w", encoding="utf-8") as f:
-                json.dump(collections, f, ensure_ascii=False, indent=4)
+            conn.commit()
 
             # ===== お金処理 =====
-            if user not in money:
-                money[user] = 0
-
             reward = random.randint(10, 50)
-            money[user] += reward
 
-            with open("money.json", "w", encoding="utf-8") as f:
-                json.dump(money, f, ensure_ascii=False, indent=4)
+            cursor.execute(
+                "SELECT coins FROM money WHERE user = ?",
+                (user,)
+            )
+
+            result = cursor.fetchone()
+
+            if result is None:
+                cursor.execute(
+                    "INSERT INTO money (user, coins) VALUES (?, ?)",
+                    (user, reward)
+                )
+            else:
+                new_money = result[0] + reward
+
+                cursor.execute(
+                    "UPDATE money SET coins = ? WHERE user = ?",
+                    (new_money, user)
+                )
+
+            conn.commit()
 
             await message.channel.send(
                 f"{message.author.mention} 正解！ {countries[current_answer]['name']} をゲット！\n💰 +{reward}コイン"
             )
 
             current_answer = None
-            daily_cooldown = {}
 
     await bot.process_commands(message)
 
@@ -118,6 +150,7 @@ async def auto_spawn():
     global current_answer
 
     if current_answer is None:
+
         country = random.choice(list(countries.keys()))
         current_answer = country
 
@@ -130,20 +163,29 @@ async def auto_spawn():
 # ===== コレクション =====
 @bot.tree.command(name="collection", description="コレクションを見る")
 async def collection(interaction: discord.Interaction):
+
     user = str(interaction.user)
 
-    if user not in collections or not collections[user]:
+    cursor.execute(
+        "SELECT country FROM collections WHERE user = ?",
+        (user,)
+    )
+
+    owned = [row[0] for row in cursor.fetchall()]
+
+    if not owned:
+
         embed = discord.Embed(
             title="📦 コレクション",
             description="まだ何も持っていません",
             color=discord.Color.red()
         )
+
         await interaction.response.send_message(embed=embed)
         return
 
     from collections import Counter
 
-    owned = collections[user]
     count = Counter(owned)
 
     lines = [f"{countries[k]['name']} ×{v}" for k, v in count.items()]
@@ -164,33 +206,46 @@ async def collection(interaction: discord.Interaction):
         inline=False
     )
 
+    # コンプリート
     if len(missing) == 0:
         embed.add_field(
             name="🎉 コンプリート！",
             value="すべての国を集めました！",
             inline=False
         )
+
         embed.color = discord.Color.gold()
 
-    embed.set_footer(text=f"種類数: {len(count)} / 総数: {len(owned)}")
+    embed.set_footer(
+        text=f"種類数: {len(count)} / 総数: {len(owned)}"
+    )
 
     await interaction.response.send_message(embed=embed)
 
 # ===== ランキング =====
 @bot.tree.command(name="ranking", description="ランキングを見る")
 async def ranking(interaction: discord.Interaction):
-    if not collections:
+
+    cursor.execute("""
+    SELECT user, COUNT(*) as total
+    FROM collections
+    GROUP BY user
+    ORDER BY total DESC
+    """)
+
+    ranking_data = cursor.fetchall()
+
+    if not ranking_data:
         await interaction.response.send_message("まだ誰も集めていません")
         return
-
-    ranking_data = [(user, len(items)) for user, items in collections.items()]
-    ranking_data.sort(key=lambda x: x[1], reverse=True)
 
     lines = []
     medals = ["🥇", "🥈", "🥉"]
 
     for i, (user, count) in enumerate(ranking_data[:10]):
+
         medal = medals[i] if i < 3 else f"{i+1}位"
+
         lines.append(f"{medal} {user} - {count}個")
 
     embed = discord.Embed(
@@ -200,9 +255,14 @@ async def ranking(interaction: discord.Interaction):
     )
 
     user_name = str(interaction.user)
+
     for i, (user, count) in enumerate(ranking_data):
+
         if user == user_name:
-            embed.set_footer(text=f"あなたの順位: {i+1}位 ({count}個)")
+            embed.set_footer(
+                text=f"あなたの順位: {i+1}位 ({count}個)"
+            )
+
             break
 
     await interaction.response.send_message(embed=embed)
@@ -210,14 +270,21 @@ async def ranking(interaction: discord.Interaction):
 # ===== 所持金 =====
 @bot.tree.command(name="money", description="所持金を見る")
 async def money_cmd(interaction: discord.Interaction):
+
     user = str(interaction.user)
 
-    if user not in money:
-        money[user] = 0
+    cursor.execute(
+        "SELECT coins FROM money WHERE user = ?",
+        (user,)
+    )
+
+    result = cursor.fetchone()
+
+    coins = result[0] if result else 0
 
     embed = discord.Embed(
         title="💰 所持金",
-        description=f"{interaction.user.mention} の残高: {money[user]}コイン",
+        description=f"{interaction.user.mention} の残高: {coins}コイン",
         color=discord.Color.green()
     )
 
@@ -226,14 +293,17 @@ async def money_cmd(interaction: discord.Interaction):
 # ===== デイリー =====
 @bot.tree.command(name="daily", description="1日1回コインを受け取る")
 async def daily(interaction: discord.Interaction):
+
     user = str(interaction.user)
     now = time.time()
 
-    # 24時間チェック
+    # クールダウン
     if user in daily_cooldown:
+
         remaining = 86400 - (now - daily_cooldown[user])
 
         if remaining > 0:
+
             hours = int(remaining // 3600)
             minutes = int((remaining % 3600) // 60)
 
@@ -241,18 +311,37 @@ async def daily(interaction: discord.Interaction):
                 f"⏳ まだ受け取れません！\nあと {hours}時間 {minutes}分",
                 ephemeral=True
             )
+
             return
 
     reward = random.randint(100, 300)
 
-    if user not in money:
-        money[user] = 0
+    cursor.execute(
+        "SELECT coins FROM money WHERE user = ?",
+        (user,)
+    )
 
-    money[user] += reward
+    result = cursor.fetchone()
+
+    if result is None:
+
+        cursor.execute(
+            "INSERT INTO money (user, coins) VALUES (?, ?)",
+            (user, reward)
+        )
+
+    else:
+
+        new_money = result[0] + reward
+
+        cursor.execute(
+            "UPDATE money SET coins = ? WHERE user = ?",
+            (new_money, user)
+        )
+
+    conn.commit()
+
     daily_cooldown[user] = now
-
-    with open("money.json", "w", encoding="utf-8") as f:
-        json.dump(money, f, ensure_ascii=False, indent=4)
 
     embed = discord.Embed(
         title="🎁 デイリーボーナス",
@@ -265,6 +354,7 @@ async def daily(interaction: discord.Interaction):
 # ===== 起動時 =====
 @bot.event
 async def on_ready():
+
     await bot.tree.sync()
 
     print(f"ログインしました: {bot.user}")
@@ -275,3 +365,4 @@ async def on_ready():
 keep_alive()
 
 bot.run(os.getenv("TOKEN"))
+```
