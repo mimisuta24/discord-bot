@@ -1,4 +1,4 @@
-```python
+python
 import discord
 from discord import app_commands
 from discord.ext import commands, tasks
@@ -365,4 +365,3 @@ async def on_ready():
 keep_alive()
 
 bot.run(os.getenv("TOKEN"))
-```
