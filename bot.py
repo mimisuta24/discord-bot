@@ -4,7 +4,7 @@ from discord.ext import commands, tasks
 import random
 import os
 import time
-import sqlite3
+from supabase import create_client
 from flask import Flask
 from threading import Thread
 
@@ -28,28 +28,11 @@ intents.message_content = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# ===== SQLite =====
-conn = sqlite3.connect("data.db")
-cursor = conn.cursor()
+# ===== Supabase接続 =====
+url = os.getenv("SUPABASE_URL")
+key = os.getenv("SUPABASE_KEY")
 
-# コレクションテーブル
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS collections (
-    user TEXT,
-    country TEXT
-)
-""")
-
-# お金テーブル
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS money (
-    user TEXT PRIMARY KEY,
-    coins INTEGER,
-    last_daily REAL
-)
-""")
-
-conn.commit()
+supabase = create_client(url, key)
 
 # ===== 国データ =====
 countries = {
