@@ -288,7 +288,7 @@ async def money_cmd(interaction: discord.Interaction):
 async def daily(interaction: discord.Interaction):
 
     user = str(interaction.user)
-    now = time.time()
+    now = int(time.time())
 
     result = (
         supabase.table("players")
