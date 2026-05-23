@@ -232,27 +232,47 @@ async def collection(interaction: discord.Interaction):
 @bot.tree.command(name="ranking", description="ランキングを見る")
 async def ranking(interaction: discord.Interaction):
 
-    cursor.execute("""
-    SELECT user, COUNT(*) as total
-    FROM collections
-    GROUP BY user
-    ORDER BY total DESC
-    """)
+    result = (
+        supabase.table("players")
+        .select("*")
+        .execute()
+    )
 
-    ranking_data = cursor.fetchall()
+    players = result.data
 
-    if not ranking_data:
-        await interaction.response.send_message("まだ誰も集めていません")
+    if len(players) == 0:
+
+        await interaction.response.send_message(
+            "まだ誰も集めていません"
+        )
+
         return
 
-    lines = []
+    ranking_data = []
+
+    for player in players:
+
+        count = len(player["countries"] or [])
+
+        ranking_data.append(
+            (player["user_id"], count)
+        )
+
+    ranking_data.sort(
+        key=lambda x: x[1],
+        reverse=True
+    )
+
     medals = ["🥇", "🥈", "🥉"]
+    lines = []
 
     for i, (user, count) in enumerate(ranking_data[:10]):
 
         medal = medals[i] if i < 3 else f"{i+1}位"
 
-        lines.append(f"{medal} {user} - {count}個")
+        lines.append(
+            f"{medal} {user} - {count}個"
+        )
 
     embed = discord.Embed(
         title="🏆 コレクションランキング",
@@ -260,11 +280,12 @@ async def ranking(interaction: discord.Interaction):
         color=discord.Color.gold()
     )
 
-    user_name = str(interaction.user)
+    my_user = str(interaction.user)
 
     for i, (user, count) in enumerate(ranking_data):
 
-        if user == user_name:
+        if user == my_user:
+
             embed.set_footer(
                 text=f"あなたの順位: {i+1}位 ({count}個)"
             )
