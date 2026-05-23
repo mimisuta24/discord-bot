@@ -275,13 +275,13 @@ async def money_cmd(interaction: discord.Interaction):
     if len(result.data) > 0:
         coins = result.data[0]["coins"]
 
-    embed = discord.Embed(
-        title="💰 所持金",
-        description=f"{interaction.user.mention} の残高: {coins}コイン",
-        color=discord.Color.green()
-    )
+embed = discord.Embed(
+    title="💰 所持金",
+    description="テスト",
+    color=discord.Color.green()
+)
 
-    await interaction.response.send_message(embed=embed)
+await interaction.response.send_message(embed=embed)
 
 # ===== デイリー =====
 @bot.tree.command(name="daily", description="1日1回コインを受け取る")
