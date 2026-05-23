@@ -448,46 +448,33 @@ async def daily(interaction: discord.Interaction):
     )
 
 # ===== 起動時 =====
-
-@bot.event
-async def setup_hook():
-
-    print("setup_hook動いた")
-
-
 @bot.event
 async def on_ready():
 
-    try:
+    print("on_ready開始")
 
-        print("on_ready開始")
+    await bot.change_presence(
+        status=discord.Status.online,
+        activity=discord.Game("国当てゲーム")
+    )
 
-        await bot.change_presence(
-            status=discord.Status.online,
-            activity=discord.Game("国当てゲーム")
-        )
+    print("プレゼンス設定完了")
 
-        print("プレゼンス設定完了")
+    await bot.tree.sync()
 
-        await bot.tree.sync()
+    print("コマンド同期完了")
 
-        print("コマンド同期完了")
+    print(f"ログインしました: {bot.user}")
 
-        print(f"ログインしました: {bot.user}")
+    print(
+        f"auto_spawn動作中:{auto_spawn.is_running()}"
+    )
 
-        print(
-            f"auto_spawn動作中: {auto_spawn.is_running()}"
-        )
+    if not auto_spawn.is_running():
 
-        if not auto_spawn.is_running():
+        auto_spawn.start()
 
-            auto_spawn.start()
-
-            print("auto_spawn開始")
-
-    except Exception as e:
-
-        print(f"on_readyエラー: {e}")
+        print("auto_spawn開始")
 
 # ===== 起動 =====
 keep_alive()
@@ -495,5 +482,3 @@ keep_alive()
 print("bot.run直前")
 
 bot.run(os.getenv("TOKEN"))
-
-print("bot.run後")
