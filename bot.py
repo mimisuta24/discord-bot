@@ -275,13 +275,13 @@ async def money_cmd(interaction: discord.Interaction):
     if len(result.data) > 0:
         coins = result.data[0]["coins"]
 
-embed = discord.Embed(
-    title="💰 所持金",
-    description="テスト",
-    color=discord.Color.green()
-)
+    embed = discord.Embed(
+        title="💰 所持金",
+        description=f"{interaction.user.mention} の残高: {coins}コイン",
+        color=discord.Color.green()
+    )
 
-await interaction.response.send_message(embed=embed)
+    await interaction.response.send_message(embed=embed)
 
 # ===== デイリー =====
 @bot.tree.command(name="daily", description="1日1回コインを受け取る")
@@ -348,47 +348,6 @@ supabase.table("players").update({
 await interaction.response.send_message(
     f"🎁 {reward}コイン獲得！"
 )
-
-        await interaction.response.send_message(embed=embed)
-        return
-
-    coins, last_daily = result
-
-    # 24時間チェック
-    if last_daily is not None:
-
-        remaining = 86400 - (now - last_daily)
-
-        if remaining > 0:
-
-            hours = int(remaining // 3600)
-            minutes = int((remaining % 3600) // 60)
-
-            await interaction.response.send_message(
-                f"⏳ まだ受け取れません！\nあと {hours}時間 {minutes}分",
-                ephemeral=True
-            )
-
-            return
-
-    # 報酬
-    reward = random.randint(100, 300)
-    new_coins = coins + reward
-
-    cursor.execute(
-        "UPDATE money SET coins = ?, last_daily = ? WHERE user = ?",
-        (new_coins, now, user)
-    )
-
-    conn.commit()
-
-    embed = discord.Embed(
-        title="🎁 デイリーボーナス",
-        description=f"{reward}コイン獲得！",
-        color=discord.Color.gold()
-    )
-
-    await interaction.response.send_message(embed=embed)
 
 # ===== 起動時 =====
 @bot.event
