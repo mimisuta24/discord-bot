@@ -392,6 +392,11 @@ async def daily(interaction: discord.Interaction):
 @bot.event
 async def on_ready():
 
+    await bot.change_presence(
+        status=discord.Status.online,
+        activity=discord.Game("国当てゲーム")
+    )
+
     await bot.tree.sync()
 
     print(f"ログインしました: {bot.user}")
