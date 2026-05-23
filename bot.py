@@ -86,41 +86,48 @@ async def on_message(message):
 
             user = str(message.author)
 
-            # ===== コレクション保存 =====
-            cursor.execute(
-                "INSERT INTO collections (user, country) VALUES (?, ?)",
-                (user, current_answer)
+            # プレイヤーデータ取得
+            result = (
+                supabase.table("players")
+                .select("*")
+                .eq("user_id", user)
+                .execute()
             )
 
-            conn.commit()
+            data = result.data
 
-            # ===== お金処理 =====
             reward = random.randint(10, 50)
 
-            cursor.execute(
-                "SELECT coins FROM money WHERE user = ?",
-                (user,)
-            )
+            # 初回プレイヤー
+            if len(data) == 0:
 
-            result = cursor.fetchone()
+                supabase.table("players").insert({
+                    "user_id": user,
+                    "coins": reward,
+                    "countries": [current_answer]
+                }).execute()
 
-            if result is None:
-                cursor.execute(
-                    "INSERT INTO money (user, coins) VALUES (?, ?)",
-                    (user, reward)
-                )
             else:
-                new_money = result[0] + reward
 
-                cursor.execute(
-                    "UPDATE money SET coins = ? WHERE user = ?",
-                    (new_money, user)
-                )
+                player = data[0]
 
-            conn.commit()
+                countries_owned = player["countries"] or []
+                countries_owned.append(current_answer)
+
+                new_money = player["coins"] + reward
+
+                supabase.table("players").update({
+                    "coins": new_money,
+                    "countries": countries_owned
+                }).eq(
+                    "user_id",
+                    user
+                ).execute()
 
             await message.channel.send(
-                f"{message.author.mention} 正解！ {countries[current_answer]['name']} をゲット！\n💰 +{reward}コイン"
+                f"{message.author.mention} 正解！ "
+                f"{countries[current_answer]['name']} をゲット！\n"
+                f"💰 +{reward}コイン"
             )
 
             current_answer = None
@@ -256,14 +263,17 @@ async def money_cmd(interaction: discord.Interaction):
 
     user = str(interaction.user)
 
-    cursor.execute(
-        "SELECT coins FROM money WHERE user = ?",
-        (user,)
+    result = (
+        supabase.table("players")
+        .select("coins")
+        .eq("user_id", user)
+        .execute()
     )
 
-    result = cursor.fetchone()
+    coins = 0
 
-    coins = result[0] if result else 0
+    if len(result.data) > 0:
+        coins = result.data[0]["coins"]
 
     embed = discord.Embed(
         title="💰 所持金",
@@ -280,31 +290,64 @@ async def daily(interaction: discord.Interaction):
     user = str(interaction.user)
     now = time.time()
 
-    # データ取得
-    cursor.execute(
-        "SELECT coins, last_daily FROM money WHERE user = ?",
-        (user,)
+    result = (
+        supabase.table("players")
+        .select("*")
+        .eq("user_id", user)
+        .execute()
     )
 
-    result = cursor.fetchone()
+    reward = random.randint(100, 300)
 
     # 初回
-    if result is None:
+    if len(result.data) == 0:
 
-        reward = random.randint(100, 300)
+        supabase.table("players").insert({
+            "user_id": user,
+            "coins": reward,
+            "countries": [],
+            "last_daily": now
+        }).execute()
 
-        cursor.execute(
-            "INSERT INTO money (user, coins, last_daily) VALUES (?, ?, ?)",
-            (user, reward, now)
+        await interaction.response.send_message(
+            f"🎁 {reward}コイン獲得！"
         )
 
-        conn.commit()
+        return
 
-        embed = discord.Embed(
-            title="🎁 デイリーボーナス",
-            description=f"{reward}コイン獲得！",
-            color=discord.Color.gold()
-        )
+    player = result.data[0]
+
+    last_daily = player["last_daily"]
+
+    if last_daily:
+
+        remaining = 86400 - (now - last_daily)
+
+        if remaining > 0:
+
+            hours = int(remaining // 3600)
+            minutes = int((remaining % 3600) // 60)
+
+            await interaction.response.send_message(
+                f"⏳ あと {hours}時間 {minutes}分",
+                ephemeral=True
+            )
+
+            return
+
+    new_money = player["coins"] + reward
+
+    supabase.table("players").update({
+        "coins": new_money,
+        "last_daily": now
+    }).eq(
+        "user_id",
+        user
+    ).execute()
+
+    await interaction.response.send_message(
+        f"🎁 {reward}コイン獲得！"
+    )
 
         await interaction.response.send_message(embed=embed)
         return
