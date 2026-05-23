@@ -335,19 +335,21 @@ async def daily(interaction: discord.Interaction):
 
             return
 
-new_money = player["coins"] + reward
+    reward = random.randint(100, 300)
 
-supabase.table("players").update({
-    "coins": new_money,
-    "last_daily": now
-}).eq(
-    "user_id",
-    user
-).execute()
+    new_money = player["coins"] + reward
 
-await interaction.response.send_message(
-    f"🎁 {reward}コイン獲得！"
-)
+    supabase.table("players").update({
+        "coins": new_money,
+        "last_daily": now
+    }).eq(
+        "user_id",
+        user
+    ).execute()
+
+    await interaction.response.send_message(
+        f"🎁 {reward}コイン獲得！"
+    )
 
 # ===== 起動時 =====
 @bot.event
