@@ -448,6 +448,13 @@ async def daily(interaction: discord.Interaction):
     )
 
 # ===== 起動時 =====
+
+@bot.event
+async def setup_hook():
+
+    print("setup_hook動いた")
+
+
 @bot.event
 async def on_ready():
 
@@ -466,9 +473,7 @@ async def on_ready():
 
         print("コマンド同期完了")
 
-        print(
-            f"ログインしました: {bot.user}"
-        )
+        print(f"ログインしました: {bot.user}")
 
         print(
             f"auto_spawn動作中: {auto_spawn.is_running()}"
@@ -478,17 +483,17 @@ async def on_ready():
 
             auto_spawn.start()
 
-            print(
-                "auto_spawn開始"
-            )
+            print("auto_spawn開始")
 
     except Exception as e:
 
-        print(
-            f"on_readyエラー: {e}"
-        )
+        print(f"on_readyエラー: {e}")
 
 # ===== 起動 =====
 keep_alive()
 
+print("bot.run直前")
+
 bot.run(os.getenv("TOKEN"))
+
+print("bot.run後")
