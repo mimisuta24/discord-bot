@@ -451,25 +451,41 @@ async def daily(interaction: discord.Interaction):
 @bot.event
 async def on_ready():
 
-    await bot.change_presence(
-        status=discord.Status.online,
-        activity=discord.Game("国当てゲーム")
-    )
+    try:
 
-    await bot.tree.sync()
+        print("on_ready開始")
 
-    print(f"ログインしました: {bot.user}")
+        await bot.change_presence(
+            status=discord.Status.online,
+            activity=discord.Game("国当てゲーム")
+        )
 
-    print(
-        f"auto_spawn動作中: {auto_spawn.is_running()}"
-    )
+        print("プレゼンス設定完了")
 
-    if not auto_spawn.is_running():
+        await bot.tree.sync()
 
-        auto_spawn.start()
+        print("コマンド同期完了")
 
         print(
-            "auto_spawn開始"
+            f"ログインしました: {bot.user}"
+        )
+
+        print(
+            f"auto_spawn動作中: {auto_spawn.is_running()}"
+        )
+
+        if not auto_spawn.is_running():
+
+            auto_spawn.start()
+
+            print(
+                "auto_spawn開始"
+            )
+
+    except Exception as e:
+
+        print(
+            f"on_readyエラー: {e}"
         )
 
 # ===== 起動 =====
