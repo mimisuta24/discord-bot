@@ -156,14 +156,27 @@ async def collection(interaction: discord.Interaction):
 
     user = str(interaction.user)
 
-    cursor.execute(
-        "SELECT country FROM collections WHERE user = ?",
-        (user,)
+    result = (
+        supabase.table("players")
+        .select("countries")
+        .eq("user_id", user)
+        .execute()
     )
 
-    owned = [row[0] for row in cursor.fetchall()]
+    if len(result.data) == 0:
 
-    if not owned:
+        embed = discord.Embed(
+            title="📦 コレクション",
+            description="まだ何も持っていません",
+            color=discord.Color.red()
+        )
+
+        await interaction.response.send_message(embed=embed)
+        return
+
+    owned = result.data[0]["countries"] or []
+
+    if len(owned) == 0:
 
         embed = discord.Embed(
             title="📦 コレクション",
@@ -178,7 +191,12 @@ async def collection(interaction: discord.Interaction):
 
     count = Counter(owned)
 
-    lines = [f"{countries[k]['name']} ×{v}" for k, v in count.items()]
+    lines = []
+
+    for country, amount in count.items():
+        lines.append(
+            f"{countries[country]['name']} ×{amount}"
+        )
 
     embed = discord.Embed(
         title=f"📦 {interaction.user.name} のコレクション",
@@ -186,9 +204,7 @@ async def collection(interaction: discord.Interaction):
         color=discord.Color.blue()
     )
 
-    all_countries = set(countries.keys())
-    owned_set = set(owned)
-    missing = all_countries - owned_set
+    missing = set(countries.keys()) - set(owned)
 
     embed.add_field(
         name="📖 未所持",
@@ -196,18 +212,18 @@ async def collection(interaction: discord.Interaction):
         inline=False
     )
 
-    # コンプリート
     if len(missing) == 0:
+
         embed.add_field(
             name="🎉 コンプリート！",
-            value="すべての国を集めました！",
+            value="すべて集めました！",
             inline=False
         )
 
         embed.color = discord.Color.gold()
 
     embed.set_footer(
-        text=f"種類数: {len(count)} / 総数: {len(owned)}"
+        text=f"種類数:{len(set(owned))} / 総数:{len(owned)}"
     )
 
     await interaction.response.send_message(embed=embed)
