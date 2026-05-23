@@ -139,6 +139,10 @@ async def on_message(message):
 async def auto_spawn():
     global current_answer
 
+    print(
+        f"auto_spawn実行 current_answer={current_answer}"
+    )
+
     try:
 
         if current_answer is None:
