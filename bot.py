@@ -199,6 +199,14 @@ async def auto_spawn():
             f"auto_spawnエラー: {e}"
         )
 
+
+@auto_spawn.before_loop
+async def before_auto_spawn():
+
+    await bot.wait_until_ready()
+
+    print("auto_spawn準備完了")
+
 # ===== コレクション =====
 @bot.tree.command(name="collection", description="コレクションを見る")
 async def collection(interaction: discord.Interaction):
@@ -452,8 +460,17 @@ async def on_ready():
 
     print(f"ログインしました: {bot.user}")
 
+    print(
+        f"auto_spawn動作中: {auto_spawn.is_running()}"
+    )
+
     if not auto_spawn.is_running():
+
         auto_spawn.start()
+
+        print(
+            "auto_spawn開始"
+        )
 
 # ===== 起動 =====
 keep_alive()
