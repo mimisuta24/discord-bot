@@ -45,7 +45,7 @@ countries = {
     "usa": {
         "name": "アメリカ",
         "aliases": ["usa", "america", "アメリカ", "米国", "あめりか"],
-        "image": "https://flagcdn.com/w320/us.png"
+        "image": "https://cdn.discordapp.com/attachments/1501419834913587220/1507640185423401011/057bc90be89d4e6d.png?ex=6a12a2d6&is=6a115156&hm=0070bb2f98bbbf48efe4ff83111782bef699772da258cbafdc7b30caa18d551a&"
     },
 
     "france": {
@@ -139,16 +139,39 @@ async def on_message(message):
 async def auto_spawn():
     global current_answer
 
-    if current_answer is None:
+    try:
 
-        country = random.choice(list(countries.keys()))
-        current_answer = country
+        if current_answer is None:
 
-        channel = bot.get_channel(1500806594458550302)
+            country = random.choice(
+                list(countries.keys())
+            )
 
-        if channel:
-            await channel.send("🌍 国を当てて！")
-            await channel.send(countries[country]["image"])
+            current_answer = country
+
+            channel = bot.get_channel(
+                1500806594458550302
+            )
+
+            if channel:
+
+                await channel.send(
+                    "🌍 国を当てて！"
+                )
+
+                await channel.send(
+                    countries[country]["image"]
+                )
+
+                print(
+                    f"{country} を出現"
+                )
+
+    except Exception as e:
+
+        print(
+            f"auto_spawnエラー: {e}"
+        )
 
 # ===== コレクション =====
 @bot.tree.command(name="collection", description="コレクションを見る")
@@ -403,7 +426,8 @@ async def on_ready():
 
     print(f"ログインしました: {bot.user}")
 
-    auto_spawn.start()
+    if not auto_spawn.is_running():
+        auto_spawn.start()
 
 # ===== 起動 =====
 keep_alive()
