@@ -489,7 +489,6 @@ async def on_ready():
         )
 
 # ===== 起動 =====
-keep_alive()
 
 print("bot.run直前")
 
