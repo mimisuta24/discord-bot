@@ -368,26 +368,27 @@ async def daily(interaction: discord.Interaction):
 
             return
 
+    # 報酬
     reward = random.randint(100, 300)
-new_money = player["coins"] + reward
+    new_money = player["coins"] + reward
 
-supabase.table("players").update({
-    "coins": new_money,
-    "last_daily": int(now)
-}).eq(
-    "user_id",
-    user
-).execute()
+    supabase.table("players").update({
+        "coins": new_money,
+        "last_daily": int(now)
+    }).eq(
+        "user_id",
+        user
+    ).execute()
 
-embed = discord.Embed(
-    title="🎁 デイリーボーナス",
-    description=f"{reward}コイン獲得！",
-    color=discord.Color.gold()
-)
+    embed = discord.Embed(
+        title="🎁 デイリーボーナス",
+        description=f"{reward}コイン獲得！",
+        color=discord.Color.gold()
+    )
 
-await interaction.response.send_message(
-    embed=embed
-)
+    await interaction.response.send_message(
+        embed=embed
+    )
 
 # ===== 起動時 =====
 @bot.event
