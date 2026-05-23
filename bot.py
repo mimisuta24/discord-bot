@@ -69,12 +69,14 @@ countries = {
 
 # ===== 変数 =====
 current_answer = None
+spawn_time = None
 daily_cooldown = {}
 
 # ===== メッセージ処理 =====
 @bot.event
 async def on_message(message):
     global current_answer
+    global spawn_time
 
     if message.author.bot:
         return
@@ -131,6 +133,7 @@ async def on_message(message):
             )
 
             current_answer = None
+            spawn_time = None
 
     await bot.process_commands(message)
 
@@ -138,6 +141,7 @@ async def on_message(message):
 @tasks.loop(seconds=600)
 async def auto_spawn():
     global current_answer
+    global spawn_time
 
     print(
         f"auto_spawn実行 current_answer={current_answer}"
@@ -145,6 +149,23 @@ async def auto_spawn():
 
     try:
 
+        now = time.time()
+
+        # 20分経過したら消す
+        if (
+            current_answer is not None
+            and spawn_time is not None
+            and now - spawn_time >= 1200
+        ):
+
+            print(
+                f"{current_answer} 時間切れ"
+            )
+
+            current_answer = None
+            spawn_time = None
+
+        # 新しい国出現
         if current_answer is None:
 
             country = random.choice(
@@ -152,6 +173,7 @@ async def auto_spawn():
             )
 
             current_answer = country
+            spawn_time = now
 
             channel = bot.get_channel(
                 1500806594458550302
