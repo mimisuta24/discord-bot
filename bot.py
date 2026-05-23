@@ -453,28 +453,40 @@ async def on_ready():
 
     print("on_ready開始")
 
-    await bot.change_presence(
-        status=discord.Status.online,
-        activity=discord.Game("国当てゲーム")
-    )
+    try:
 
-    print("プレゼンス設定完了")
+        await bot.change_presence(
+            status=discord.Status.online,
+            activity=discord.Game("国当てゲーム")
+        )
 
-    await bot.tree.sync()
+        print("プレゼンス設定完了")
 
-    print("コマンド同期完了")
+        await bot.tree.sync()
 
-    print(f"ログインしました: {bot.user}")
+        print("コマンド同期完了")
 
-    print(
-        f"auto_spawn動作中:{auto_spawn.is_running()}"
-    )
+        print(
+            f"ログインしました: {bot.user}"
+        )
 
-    if not auto_spawn.is_running():
+        print(
+            f"auto_spawn動作中:{auto_spawn.is_running()}"
+        )
 
-        auto_spawn.start()
+        if not auto_spawn.is_running():
 
-        print("auto_spawn開始")
+            auto_spawn.start()
+
+            print(
+                "auto_spawn開始"
+            )
+
+    except Exception as e:
+
+        print(
+            f"on_readyエラー:{e}"
+        )
 
 # ===== 起動 =====
 keep_alive()
