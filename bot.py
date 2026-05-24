@@ -96,54 +96,59 @@ async def on_submit(
     global spawn_time
     global spawn_message
 
-    if current_answer is None:
+    try:
+
+        if current_answer is None:
+
+            await interaction.response.send_message(
+                "もう消えました",
+                ephemeral=True
+            )
+            return
+
+        aliases = countries[
+            current_answer
+        ]["aliases"]
+
+        answer = self.country.value.lower()
+
+        if answer not in [
+            a.lower()
+            for a in aliases
+        ]:
+
+            await interaction.response.send_message(
+                "❌ 不正解",
+                ephemeral=True
+            )
+            return
+
+        reward=random.randint(10,50)
 
         await interaction.response.send_message(
-            "もう消えました",
-            ephemeral=True
-        )
-        return
-
-    aliases = countries[
-        current_answer
-    ]["aliases"]
-
-    answer = self.country.value.lower()
-
-    if answer not in [
-        a.lower()
-        for a in aliases
-    ]:
-
-        await interaction.response.send_message(
-            "❌ 不正解",
-            ephemeral=True
-        )
-        return
-
-    reward = random.randint(10,50)
-
-    await interaction.response.send_message(
-        f"✅ 正解！ "
-        f"{countries[current_answer]['name']} "
-        f"ゲット！\n"
-        f"💰+{reward}"
-    )
-
-    if spawn_message:
-
-        view = CatchView()
-
-        for item in view.children:
-            item.disabled = True
-
-        await spawn_message.edit(
-            view=view
+            "✅ 正解！"
         )
 
-    current_answer = None
-    spawn_time = None
-    spawn_message = None
+        if spawn_message:
+
+            view=CatchView()
+
+            for child in view.children:
+                child.disabled=True
+
+            await spawn_message.edit(
+                view=view
+            )
+
+        current_answer=None
+        spawn_time=None
+        spawn_message=None
+
+    except Exception as e:
+
+        print(
+            f"Modalエラー: {e}"
+        )
 
 # ===== ボタン =====
 class CatchView(View):
