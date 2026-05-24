@@ -78,77 +78,85 @@ daily_cooldown = {}
 class CountryModal(Modal):
 
     def __init__(self):
-        super().__init__(title="国名を入力")
+
+        super().__init__(
+            title="国名を入力"
+        )
 
         self.country = TextInput(
             label="国名",
             placeholder="日本 / japan など"
         )
 
-        self.add_item(self.country)
-
-async def on_submit(
-    self,
-    interaction: discord.Interaction
-):
-
-    global current_answer
-    global spawn_time
-    global spawn_message
-
-    try:
-
-        if current_answer is None:
-
-            await interaction.response.send_message(
-                "もう消えました",
-                ephemeral=True
-            )
-            return
-
-        aliases = countries[
-            current_answer
-        ]["aliases"]
-
-        answer = self.country.value.lower()
-
-        if answer not in [
-            a.lower()
-            for a in aliases
-        ]:
-
-            await interaction.response.send_message(
-                "❌ 不正解",
-                ephemeral=True
-            )
-            return
-
-        reward=random.randint(10,50)
-
-        await interaction.response.send_message(
-            "✅ 正解！"
+        self.add_item(
+            self.country
         )
 
-        if spawn_message:
+    async def on_submit(
+        self,
+        interaction: discord.Interaction
+    ):
 
-            view=CatchView()
+        global current_answer
+        global spawn_time
+        global spawn_message
 
-            for child in view.children:
-                child.disabled=True
+        try:
 
-            await spawn_message.edit(
-                view=view
+            if current_answer is None:
+
+                await interaction.response.send_message(
+                    "もう消えました",
+                    ephemeral=True
+                )
+                return
+
+            aliases = countries[
+                current_answer
+            ]["aliases"]
+
+            answer = self.country.value.lower()
+
+            if answer not in [
+                a.lower()
+                for a in aliases
+            ]:
+
+                await interaction.response.send_message(
+                    "❌ 不正解",
+                    ephemeral=True
+                )
+                return
+
+            reward = random.randint(10,50)
+
+            await interaction.response.send_message(
+                f"✅ 正解！ "
+                f"{countries[current_answer]['name']} "
+                f"ゲット！\n"
+                f"💰+{reward}"
             )
 
-        current_answer=None
-        spawn_time=None
-        spawn_message=None
+            if spawn_message:
 
-    except Exception as e:
+                view = CatchView()
 
-        print(
-            f"Modalエラー: {e}"
-        )
+                for child in view.children:
+                    child.disabled = True
+
+                await spawn_message.edit(
+                    view=view
+                )
+
+            current_answer = None
+            spawn_time = None
+            spawn_message = None
+
+        except Exception as e:
+
+            print(
+                f"Modalエラー:{e}"
+            )
 
 # ===== ボタン =====
 class CatchView(View):
