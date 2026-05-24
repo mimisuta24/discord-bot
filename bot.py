@@ -732,12 +732,10 @@ async def ranking(
 ):
 
     result = (
-
         supabase
         .table("players")
         .select("*")
         .execute()
-
     )
 
     players = result.data
@@ -754,80 +752,61 @@ async def ranking(
     for player in players:
 
         count = len(
-            player.get(
-                "countries"
-            )
+            player.get("countries")
             or []
         )
 
         ranking_data.append(
-
             (
                 player["user_id"],
                 count
             )
-
         )
 
     ranking_data.sort(
-
         key=lambda x: x[1],
-
         reverse=True
-
     )
 
     medals = [
-
         "🥇",
         "🥈",
         "🥉"
-
     ]
 
     lines = []
 
     for i, (
-
-        user,
+        user_id,
         count
-
     ) in enumerate(
-
         ranking_data[:10]
-
     ):
 
         medal = (
-
             medals[i]
-
             if i < 3
+            else f"{i+1}位"
+        )
 
-            else
+        member = interaction.guild.get_member(
+            int(user_id)
+        )
 
-            f"{i+1}位"
-
+        name = (
+            member.display_name
+            if member
+            else "不明ユーザー"
         )
 
         lines.append(
-
-            f"{medal} "
-            f"{count}個"
-
+            f"{medal} {name} - {count}個"
         )
 
     embed = discord.Embed(
-
-        title=
-        "🏆 コレクションランキング",
-
-        description=
-        "\n".join(lines),
-
-        color=
-        discord.Color.gold()
-
+        title="🏆 コレクションランキング",
+        description="\n".join(lines),
+        color=discord.Color.gold()
     )
 
     my_id = str(
@@ -835,32 +814,25 @@ async def ranking(
     )
 
     for i, (
-
-        user,
+        user_id,
         count
-
     ) in enumerate(
-
         ranking_data
     ):
 
-        if user == my_id:
+        if user_id == my_id:
 
             embed.set_footer(
-
                 text=
                 f"あなたの順位:"
                 f"{i+1}位 "
                 f"({count}個)"
-
             )
-
             break
 
     await interaction.response.send_message(
         embed=embed
     )
-
 
 # ===== 所持金 =====
 
