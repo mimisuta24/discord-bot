@@ -71,6 +71,7 @@ countries = {
 # ===== 変数 =====
 current_answer = None
 spawn_time = None
+spawn_message = None
 daily_cooldown = {}
 
 # ===== 国入力ポップ =====
@@ -161,8 +162,22 @@ class CountryModal(Modal):
             f"💰+{reward}"
         )
 
-        current_answer=None
-        spawn_time=None
+        global spawn_message
+
+            if spawn_message:
+
+            view = CatchView()
+
+        for item in view.children:
+            item.disabled = True
+
+        await spawn_message.edit(
+            view=view
+        )
+
+        current_answer = None
+        spawn_time = None
+        spawn_message = None
 
 
 # ===== ボタン =====
@@ -170,9 +185,9 @@ class CatchView(View):
 
     def __init__(self):
 
-        super().__init__(
-            timeout=None
-        )
+        super().__init__(timeout=None)
+
+        self.catch_button.disabled = False
 
     @discord.ui.button(
         label="Catch me!",
@@ -305,9 +320,11 @@ async def auto_spawn():
                 url=countries[country]["image"]
                 )
 
-                await channel.send(
-                embed=embed,
-                view=CatchView()
+                global spawn_message
+
+                spawn_message = await channel.send(
+                    embed=embed,
+                    view=CatchView()
                 )
 
                 print(
@@ -572,12 +589,19 @@ async def spawn_cmd(
             f"⚡ {interaction.user.mention} が100コインで即時スポーン！"
         )
 
-        await channel.send(
-            "🌍 国を当てて！"
+        embed = discord.Embed(
+            title="🌍 国を当てて！"
         )
 
-        await channel.send(
-            countries[country]["image"]
+        embed.set_image(
+            url=countries[country]["image"]
+        )
+
+        global spawn_message
+
+        spawn_message = await channel.send(
+            embed=embed,
+            view=CatchView()
         )
 
     await interaction.response.send_message(
