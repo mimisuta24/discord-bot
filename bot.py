@@ -377,6 +377,93 @@ async def money_cmd(interaction: discord.Interaction):
 
     await interaction.response.send_message(embed=embed)
 
+# ===== 即時スポーン =====
+@bot.tree.command(
+    name="spawn",
+    description="100コインで国を即時出現"
+)
+async def spawn_cmd(
+    interaction: discord.Interaction
+):
+
+    global current_answer
+    global spawn_time
+
+    user = str(interaction.user)
+
+    result = (
+        supabase.table("players")
+        .select("*")
+        .eq("user_id", user)
+        .execute()
+    )
+
+    if len(result.data) == 0:
+
+        await interaction.response.send_message(
+            "100コイン必要です",
+            ephemeral=True
+        )
+        return
+
+    player = result.data[0]
+    coins = player["coins"]
+
+    if coins < 100:
+
+        await interaction.response.send_message(
+            "💰 コイン不足です（100必要）",
+            ephemeral=True
+        )
+        return
+
+    if current_answer is not None:
+
+        await interaction.response.send_message(
+            "🌍 まだ未回答の国があります",
+            ephemeral=True
+        )
+        return
+
+    new_money = coins - 100
+
+    supabase.table("players").update({
+        "coins": new_money
+    }).eq(
+        "user_id",
+        user
+    ).execute()
+
+    country = random.choice(
+        list(countries.keys())
+    )
+
+    current_answer = country
+    spawn_time = time.time()
+
+    channel = bot.get_channel(
+        1500806594458550302
+    )
+
+    if channel:
+
+        await channel.send(
+            f"⚡ {interaction.user.mention} が100コインで即時スポーン！"
+        )
+
+        await channel.send(
+            "🌍 国を当てて！"
+        )
+
+        await channel.send(
+            countries[country]["image"]
+        )
+
+    await interaction.response.send_message(
+        "100コイン消費しました",
+        ephemeral=True
+    )
+
 # ===== デイリー =====
 @bot.tree.command(name="daily", description="1日1回コインを受け取る")
 async def daily(interaction: discord.Interaction):
