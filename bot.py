@@ -57,8 +57,8 @@ countries = {
 
     "germany": {
         "name": "ドイツ",
-        "aliases": ["germany", "ドイツ", "どいつ"],
-        "image": "https://flagcdn.com/w320/de.png"
+        "aliases": ["germany", "ドイツ", "どいつ", "Federal Republic of Germany", "ドイツ連邦共和国"],
+        "image": "https://cdn.discordapp.com/attachments/1501419834913587220/1508073723163574343/by_cake.png?ex=6a14369a&is=6a12e51a&hm=340b925bfdde917e92ab131f5ea396ca61c44efd42fdcbdfa5f01b694dba0522&"
     },
 
     "china": {
