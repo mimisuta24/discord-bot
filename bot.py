@@ -184,17 +184,17 @@ spawn_message = None
 # ===== ボタン =====
 class CatchView(View):
 
-def __init__(self):
-    super().__init__(timeout=None)
+    def __init__(self):
+        super().__init__(timeout=None)
 
     @discord.ui.button(
-        label="Catch me!",
+        label="Catch the ball!",
         style=discord.ButtonStyle.primary
     )
     async def catch(
         self,
-        interaction:discord.Interaction,
-        button:Button
+        interaction: discord.Interaction,
+        button: Button
     ):
 
         await interaction.response.send_modal(
