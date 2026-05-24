@@ -128,46 +128,46 @@ class CountryModal(Modal):
                 )
                 return
 
-reward = random.randint(10,50)
+            reward = random.randint(10,50)
 
-user = str(interaction.user)
+            user = str(interaction.user)
 
-result = (
-    supabase.table("players")
-    .select("*")
-    .eq("user_id", user)
-    .execute()
-)
+            result = (
+                supabase.table("players")
+                .select("*")
+                .eq("user_id", user)
+                .execute()
+            )
 
-if len(result.data) == 0:
+            if len(result.data) == 0:
 
-    supabase.table("players").insert({
-        "user_id": user,
-        "coins": reward,
-        "countries": [current_answer]
-    }).execute()
+                supabase.table("players").insert({
+                    "user_id": user,
+                    "coins": reward,
+                    "countries": [current_answer]
+                }).execute()
 
-else:
+            else:
 
-    player = result.data[0]
+                player = result.data[0]
 
-    owned = player["countries"] or []
-    owned.append(current_answer)
+                owned = player["countries"] or []
+                owned.append(current_answer)
 
-    supabase.table("players").update({
-        "coins": player["coins"] + reward,
-        "countries": owned
-    }).eq(
-        "user_id",
-        user
-    ).execute()
+                supabase.table("players").update({
+                    "coins": player["coins"] + reward,
+                    "countries": owned
+                }).eq(
+                    "user_id",
+                    user
+                ).execute()
 
-await interaction.response.send_message(
-    f"✅ 正解！ "
-    f"{countries[current_answer]['name']} "
-    f"ゲット！\n"
-    f"💰+{reward}コイン"
-)
+            await interaction.response.send_message(
+                f"✅ 正解！ "
+                f"{countries[current_answer]['name']} "
+                f"ゲット！\n"
+                f"💰+{reward}コイン"
+            )
 
             if spawn_message:
 
