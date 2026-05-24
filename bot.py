@@ -128,14 +128,46 @@ class CountryModal(Modal):
                 )
                 return
 
-            reward = random.randint(10,50)
+reward = random.randint(10,50)
 
-            await interaction.response.send_message(
-                f"✅ 正解！ "
-                f"{countries[current_answer]['name']} "
-                f"ゲット！\n"
-                f"💰+{reward}"
-            )
+user = str(interaction.user)
+
+result = (
+    supabase.table("players")
+    .select("*")
+    .eq("user_id", user)
+    .execute()
+)
+
+if len(result.data) == 0:
+
+    supabase.table("players").insert({
+        "user_id": user,
+        "coins": reward,
+        "countries": [current_answer]
+    }).execute()
+
+else:
+
+    player = result.data[0]
+
+    owned = player["countries"] or []
+    owned.append(current_answer)
+
+    supabase.table("players").update({
+        "coins": player["coins"] + reward,
+        "countries": owned
+    }).eq(
+        "user_id",
+        user
+    ).execute()
+
+await interaction.response.send_message(
+    f"✅ 正解！ "
+    f"{countries[current_answer]['name']} "
+    f"ゲット！\n"
+    f"💰+{reward}コイン"
+)
 
             if spawn_message:
 
