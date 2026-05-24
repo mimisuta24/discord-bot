@@ -162,32 +162,30 @@ class CountryModal(Modal):
             f"💰+{reward}"
         )
 
-        global spawn_message
+global spawn_message
 
-            if spawn_message:
+if spawn_message:
 
-            view = CatchView()
+    view = spawn_message.components
 
-        for item in view.children:
-            item.disabled = True
+    disabled_view = CatchView()
 
-        await spawn_message.edit(
-            view=view
-        )
+    for item in disabled_view.children:
+        item.disabled = True
 
-        current_answer = None
-        spawn_time = None
-        spawn_message = None
+    await spawn_message.edit(
+        view=disabled_view
+    )
 
+current_answer = None
+spawn_time = None
+spawn_message = None
 
 # ===== ボタン =====
 class CatchView(View):
 
-    def __init__(self):
-
-        super().__init__(timeout=None)
-
-        self.catch_button.disabled = False
+def __init__(self):
+    super().__init__(timeout=None)
 
     @discord.ui.button(
         label="Catch me!",
