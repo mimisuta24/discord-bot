@@ -63,7 +63,7 @@ countries = {
 
     "china": {
         "name": "中国",
-        "aliases": ["china", "ちゅうごく", "中国"],
+        "aliases": ["china", "ちゅうごく", "中国", "中華人民共和国", "People's Republic of China"],
         "image": "https://cdn.discordapp.com/attachments/1501419834913587220/1501569328343158836/China_by_yuito.png"
     }
 }
@@ -87,99 +87,63 @@ class CountryModal(Modal):
 
         self.add_item(self.country)
 
-    async def on_submit(
-        self,
-        interaction: discord.Interaction
-    ):
+async def on_submit(
+    self,
+    interaction: discord.Interaction
+):
 
-        global current_answer
-        global spawn_time
+    global current_answer
+    global spawn_time
+    global spawn_message
 
-        if current_answer is None:
-
-            await interaction.response.send_message(
-                "もう消えました",
-                ephemeral=True
-            )
-            return
-
-        aliases = countries[
-            current_answer
-        ]["aliases"]
-
-        answer = self.country.value.lower()
-
-        if answer not in [
-            a.lower()
-            for a in aliases
-        ]:
-
-            await interaction.response.send_message(
-                "❌ 不正解",
-                ephemeral=True
-            )
-            return
-
-        user = str(interaction.user)
-
-        result = (
-            supabase.table("players")
-            .select("*")
-            .eq("user_id", user)
-            .execute()
-        )
-
-        reward = random.randint(10,50)
-
-        if len(result.data)==0:
-
-            supabase.table("players").insert({
-                "user_id":user,
-                "coins":reward,
-                "countries":[current_answer]
-            }).execute()
-
-        else:
-
-            player=result.data[0]
-
-            owned=player["countries"] or []
-            owned.append(current_answer)
-
-            supabase.table("players").update({
-                "coins":
-                player["coins"]+reward,
-                "countries":owned
-            }).eq(
-                "user_id",
-                user
-            ).execute()
+    if current_answer is None:
 
         await interaction.response.send_message(
-            f"✅ 正解！ "
-            f"{countries[current_answer]['name']} "
-            f"ゲット！\n"
-            f"💰+{reward}"
+            "もう消えました",
+            ephemeral=True
         )
+        return
 
-global spawn_message
+    aliases = countries[
+        current_answer
+    ]["aliases"]
 
-if spawn_message:
+    answer = self.country.value.lower()
 
-    view = spawn_message.components
+    if answer not in [
+        a.lower()
+        for a in aliases
+    ]:
 
-    disabled_view = CatchView()
+        await interaction.response.send_message(
+            "❌ 不正解",
+            ephemeral=True
+        )
+        return
 
-    for item in disabled_view.children:
-        item.disabled = True
+    reward = random.randint(10,50)
 
-    await spawn_message.edit(
-        view=disabled_view
+    await interaction.response.send_message(
+        f"✅ 正解！ "
+        f"{countries[current_answer]['name']} "
+        f"ゲット！\n"
+        f"💰+{reward}"
     )
 
-current_answer = None
-spawn_time = None
-spawn_message = None
+    if spawn_message:
+
+        view = CatchView()
+
+        for item in view.children:
+            item.disabled = True
+
+        await spawn_message.edit(
+            view=view
+        )
+
+    current_answer = None
+    spawn_time = None
+    spawn_message = None
 
 # ===== ボタン =====
 class CatchView(View):
