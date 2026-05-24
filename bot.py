@@ -1,4 +1,5 @@
 import discord
+from discord.ui import Button, View, Modal, TextInput
 from discord import app_commands
 from discord.ext import commands, tasks
 import random
@@ -71,6 +72,121 @@ countries = {
 current_answer = None
 spawn_time = None
 daily_cooldown = {}
+
+# ===== 国入力ポップ =====
+class CountryModal(Modal):
+
+    def __init__(self):
+        super().__init__(title="国名を入力")
+
+        self.country = TextInput(
+            label="国名",
+            placeholder="日本 / japan など"
+        )
+
+        self.add_item(self.country)
+
+    async def on_submit(
+        self,
+        interaction: discord.Interaction
+    ):
+
+        global current_answer
+        global spawn_time
+
+        if current_answer is None:
+
+            await interaction.response.send_message(
+                "もう消えました",
+                ephemeral=True
+            )
+            return
+
+        aliases = countries[
+            current_answer
+        ]["aliases"]
+
+        answer = self.country.value.lower()
+
+        if answer not in [
+            a.lower()
+            for a in aliases
+        ]:
+
+            await interaction.response.send_message(
+                "❌ 不正解",
+                ephemeral=True
+            )
+            return
+
+        user = str(interaction.user)
+
+        result = (
+            supabase.table("players")
+            .select("*")
+            .eq("user_id", user)
+            .execute()
+        )
+
+        reward = random.randint(10,50)
+
+        if len(result.data)==0:
+
+            supabase.table("players").insert({
+                "user_id":user,
+                "coins":reward,
+                "countries":[current_answer]
+            }).execute()
+
+        else:
+
+            player=result.data[0]
+
+            owned=player["countries"] or []
+            owned.append(current_answer)
+
+            supabase.table("players").update({
+                "coins":
+                player["coins"]+reward,
+                "countries":owned
+            }).eq(
+                "user_id",
+                user
+            ).execute()
+
+        await interaction.response.send_message(
+            f"✅ 正解！ "
+            f"{countries[current_answer]['name']} "
+            f"ゲット！\n"
+            f"💰+{reward}"
+        )
+
+        current_answer=None
+        spawn_time=None
+
+
+# ===== ボタン =====
+class CatchView(View):
+
+    def __init__(self):
+
+        super().__init__(
+            timeout=None
+        )
+
+    @discord.ui.button(
+        label="Catch me!",
+        style=discord.ButtonStyle.primary
+    )
+    async def catch(
+        self,
+        interaction:discord.Interaction,
+        button:Button
+    ):
+
+        await interaction.response.send_modal(
+            CountryModal()
+        )
 
 # ===== メッセージ処理 =====
 @bot.event
@@ -181,12 +297,17 @@ async def auto_spawn():
 
             if channel:
 
-                await channel.send(
-                    "🌍 国を当てて！"
+                embed = discord.Embed(
+                title="🌍 国を当てて！"
+                )
+
+                embed.set_image(
+                url=countries[country]["image"]
                 )
 
                 await channel.send(
-                    countries[country]["image"]
+                embed=embed,
+                view=CatchView()
                 )
 
                 print(
