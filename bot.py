@@ -162,12 +162,11 @@ class CountryModal(Modal):
                     user
                 ).execute()
 
-            await interaction.response.send_message(
-                f"✅ 正解！ "
-                f"{countries[current_answer]['name']} "
-                f"ゲット！\n"
-                f"💰+{reward}コイン"
-            )
+                await interaction.response.send_message(
+                    f"{interaction.user.mention} が正解！\n"
+                    f"🌍 {countries[current_answer]['name']} ゲット！\n"
+                    f"💰+{reward}コイン"
+                )
 
             if spawn_message:
 
