@@ -732,6 +732,8 @@ async def ranking(
 
     try:
 
+        await interaction.response.defer()
+
         result = (
             supabase
             .table("players")
@@ -743,7 +745,7 @@ async def ranking(
 
         if not players:
 
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 "まだ誰も集めていません"
             )
             return
@@ -752,28 +754,39 @@ async def ranking(
 
         for player in players:
 
-            count = len(
+            owned = (
                 player.get(
                     "countries",
                     []
                 ) or []
             )
 
-            user_id = int(
-                player["user_id"]
+            count = len(owned)
+
+            user_id = str(
+                player.get(
+                    "user_id",
+                    "0"
+                )
             )
 
             try:
 
-                discord_user = (
-                    await bot.fetch_user(
-                        user_id
-                    )
+                member = interaction.guild.get_member(
+                    int(user_id)
                 )
 
-                name = (
-                    discord_user.name
-                )
+                if member:
+
+                    name = member.display_name
+
+                else:
+
+                    user = await bot.fetch_user(
+                        int(user_id)
+                    )
+
+                    name = user.name
 
             except:
 
@@ -782,7 +795,7 @@ async def ranking(
             ranking_data.append(
                 (
                     name,
-                    str(user_id),
+                    user_id,
                     count
                 )
             )
@@ -808,14 +821,14 @@ async def ranking(
             ranking_data[:10]
         ):
 
-            rank = (
+            mark = (
                 medals[i]
                 if i < 3
                 else f"{i+1}位"
             )
 
             lines.append(
-                f"{rank} {name} {count}個"
+                f"{mark} {name} {count}個"
             )
 
         embed = discord.Embed(
@@ -829,7 +842,7 @@ async def ranking(
         )
 
         for i,(
-            name,
+            _,
             uid,
             count
         ) in enumerate(
@@ -847,7 +860,7 @@ async def ranking(
 
                 break
 
-        await interaction.response.send_message(
+        await interaction.followup.send(
             embed=embed
         )
 
@@ -857,10 +870,19 @@ async def ranking(
             f"rankingエラー:{e}"
         )
 
-        await interaction.response.send_message(
-            "ランキング取得失敗",
-            ephemeral=True
-        )
+        if not interaction.response.is_done():
+
+            await interaction.response.send_message(
+                "ランキング取得失敗",
+                ephemeral=True
+            )
+
+        else:
+
+            await interaction.followup.send(
+                "ランキング取得失敗",
+                ephemeral=True
+            )
 
 # ===== 所持金 =====
 
