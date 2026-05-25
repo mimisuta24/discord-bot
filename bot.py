@@ -120,10 +120,24 @@ countries = {
             "north korea",
             "韓国",
             "大韓民国",
-            "Republic of Korea"
+            "Republic of Korea",
+            "かんこく",
+            "南朝鮮"
         ],
         "image":
         "https://cdn.discordapp.com/attachments/1501419834913587220/1508444763614089378/bytank.png?ex=6a159029&is=6a143ea9&hm=e6de3834cfc4bacd451c52ab6900c566a1aaeba5d648f579ebd1543bb3360e8c&"
+    },
+    "russia": {
+        "name": "ロシア",
+        "aliases": [
+            "ロシア",
+            "russia",
+            "ロシア連邦",
+            "ろしあ",
+            "Russian Federation"
+        ],
+        "image":
+        "https://cdn.discordapp.com/attachments/1501419834913587220/1508445951944036503/by_.png?ex=6a159144&is=6a143fc4&hm=077f5f2515119c128a9363dfbd93c08dbd573d5980752774e10f24933e4686b7&"
     }
 
 }
