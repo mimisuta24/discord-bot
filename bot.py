@@ -800,9 +800,8 @@ async def ranking(
         )
 
         lines.append(
-            f"{medal} {name} - {count}個"
+            f"{medal} <@{user}> {count}個"
         )
-
     embed = discord.Embed(
         title="🏆 コレクションランキング",
         description="\n".join(lines),
@@ -874,16 +873,12 @@ async def money_cmd(
         )
 
     embed = discord.Embed(
-
-        title=
-        "💰 所持金",
-
-        description=
-        f"{coins}コイン",
-
-        color=
-        discord.Color.green()
-
+        title="💰 所持金",
+        description=(
+            f"{interaction.user.display_name} の所持金: "
+            f"{coins}コイン"
+        ),
+        color=discord.Color.green()
     )
 
     await interaction.response.send_message(
