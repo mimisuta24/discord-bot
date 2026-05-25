@@ -783,14 +783,26 @@ async def ranking(
                 else:
 
                     user = await bot.fetch_user(
-                        int(user_id)
+            int(user_id)
                     )
 
                     name = user.name
 
-            except:
+            except Exception as e:
 
-                name = "不明"
+                print(
+                    f"壊れたデータ削除:"
+                    f"{user_id}"
+                )
+            
+                supabase.table(
+                    "players"
+                ).delete().eq(
+                    "user_id",
+                    user_id
+                ).execute()
+
+                continue
 
             ranking_data.append(
                 (
