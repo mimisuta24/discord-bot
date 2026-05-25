@@ -722,169 +722,123 @@ async def collection(
 
 
 # ===== ランキング =====
-
 @bot.tree.command(
     name="ranking",
     description="ランキングを見る"
 )
-async def ranking(
-    interaction: discord.Interaction
-):
+async def ranking(interaction: discord.Interaction):
 
-    result = (
-        supabase
-        .table("players")
-        .select("*")
-        .execute()
-    )
+    try:
 
-    players = result.data
+        result = (
+            supabase
+            .table("players")
+            .select("*")
+            .execute()
+        )
 
-    if not players:
+        players = result.data
+
+        if not players:
+
+            await interaction.response.send_message(
+                "まだ誰も集めていません"
+            )
+            return
+
+        ranking_data = []
+
+        for player in players:
+
+            owned = player.get(
+                "countries",
+                []
+            ) or []
+
+            count = len(owned)
+
+            ranking_data.append(
+                (
+                    str(player.get(
+                        "user_id",
+                        "不明"
+                    )),
+                    count
+                )
+            )
+
+        ranking_data.sort(
+            key=lambda x: x[1],
+            reverse=True
+        )
+
+        medals = [
+            "🥇",
+            "🥈",
+            "🥉"
+        ]
+
+        lines = []
+
+        for i, (
+            user,
+            count
+        ) in enumerate(
+            ranking_data[:10]
+        ):
+
+            mark = (
+                medals[i]
+                if i < 3
+                else f"{i+1}位"
+            )
+
+            lines.append(
+                f"{mark} {count}個"
+            )
+
+        embed = discord.Embed(
+            title="🏆 コレクションランキング",
+            description="\n".join(lines),
+            color=discord.Color.gold()
+        )
+
+        my_id = str(
+            interaction.user.id
+        )
+
+        for i, (
+            uid,
+            count
+        ) in enumerate(
+            ranking_data
+        ):
+
+            if uid == my_id:
+
+                embed.set_footer(
+                    text=(
+                        f"あなたの順位:"
+                        f"{i+1}位 "
+                        f"({count}個)"
+                    )
+                )
+                break
 
         await interaction.response.send_message(
-            "まだ誰も集めていません"
-        )
-        return
-
-    ranking_data = []
-
-    for player in players:
-
-        count = len(
-            player.get("countries")
-            or []
+            embed=embed
         )
 
-        ranking_data.append(
-            (
-                player["user_id"],
-                count
-            )
+    except Exception as e:
+
+        print(
+            f"rankingエラー:{e}"
         )
 
-    ranking_data.sort(
-        key=lambda x: x[1],
-        reverse=True
-    )
-
-    medals = [
-        "🥇",
-        "🥈",
-        "🥉"
-    ]
-
-    lines = []
-
-    for i, (
-        user_id,
-        count
-    ) in enumerate(
-        ranking_data[:10]
-    ):
-
-        medal = (
-            medals[i]
-            if i < 3
-            else f"{i+1}位"
+        await interaction.response.send_message(
+            "ランキング取得でエラーが発生しました",
+            ephemeral=True
         )
-
-        member = interaction.guild.get_member(
-            int(user_id)
-        )
-
-        name = (
-            member.display_name
-            if member
-            else "不明ユーザー"
-        )
-
-        lines.append(
-            f"{medal} <@{user}> {count}個"
-        )
-    embed = discord.Embed(
-        title="🏆 コレクションランキング",
-        description="\n".join(lines),
-        color=discord.Color.gold()
-    )
-
-    my_id = str(
-        interaction.user.id
-    )
-
-    for i, (
-        user_id,
-        count
-    ) in enumerate(
-        ranking_data
-    ):
-
-        if user_id == my_id:
-
-            embed.set_footer(
-                text=
-                f"あなたの順位:"
-                f"{i+1}位 "
-                f"({count}個)"
-            )
-            break
-
-    await interaction.response.send_message(
-        embed=embed
-    )
-
-# ===== 所持金 =====
-
-@bot.tree.command(
-    name="money",
-    description="所持金を見る"
-)
-async def money_cmd(
-    interaction: discord.Interaction
-):
-
-    user = str(
-        interaction.user.id
-    )
-
-    result = (
-
-        supabase
-        .table("players")
-        .select("coins")
-        .eq(
-            "user_id",
-            user
-        )
-        .execute()
-
-    )
-
-    coins = 0
-
-    if result.data:
-
-        coins = (
-            result.data[0]
-            .get(
-                "coins",
-                0
-            )
-        )
-
-    embed = discord.Embed(
-        title="💰 所持金",
-        description=(
-            f"{interaction.user.display_name} の所持金: "
-            f"{coins}コイン"
-        ),
-        color=discord.Color.green()
-    )
-
-    await interaction.response.send_message(
-        embed=embed
-    )
-
 
 # ===== デイリー =====
 
