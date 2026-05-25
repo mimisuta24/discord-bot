@@ -112,7 +112,20 @@ countries = {
         ],
         "image":
         "https://cdn.discordapp.com/attachments/1501419834913587220/1501569328343158836/China_by_yuito.png"
+    },
+    "south korea": {
+        "name": "韓国",
+        "aliases": [
+            "korea",
+            "north korea",
+            "韓国",
+            "大韓民国",
+            "Republic of Korea"
+        ],
+        "image":
+        "https://cdn.discordapp.com/attachments/1501419834913587220/1508444763614089378/bytank.png?ex=6a159029&is=6a143ea9&hm=e6de3834cfc4bacd451c52ab6900c566a1aaeba5d648f579ebd1543bb3360e8c&"
     }
+
 }
 
 
