@@ -923,6 +923,163 @@ async def ranking(
                 ephemeral=True
             )
 
+# ===== プロフィール =====
+
+@bot.tree.command(
+    name="profile",
+    description="プロフィールを見る"
+)
+async def profile(
+    interaction: discord.Interaction
+):
+
+    user = str(
+        interaction.user.id
+    )
+
+    result = (
+        supabase
+        .table("players")
+        .select("*")
+        .eq(
+            "user_id",
+            user
+        )
+        .execute()
+    )
+
+    if not result.data:
+
+        await interaction.response.send_message(
+            "まだデータがありません"
+        )
+        return
+
+    player = result.data[0]
+
+    coins = player.get(
+        "coins",
+        0
+    )
+
+    owned = (
+        player.get(
+            "countries",
+            []
+        )
+        or []
+    )
+
+    unique = len(
+        set(owned)
+    )
+
+    total = len(
+        owned
+    )
+
+    complete = round(
+        unique
+        /
+        len(countries)
+        *
+        100,
+        1
+    )
+
+    ranking = (
+        supabase
+        .table("players")
+        .select(
+            "user_id,countries"
+        )
+        .execute()
+    )
+
+    rank_data = []
+
+    for p in ranking.data:
+
+        count = len(
+            p.get(
+                "countries",
+                []
+            )
+            or []
+        )
+
+        rank_data.append(
+            (
+                str(
+                    p["user_id"]
+                ),
+                count
+            )
+        )
+
+    rank_data.sort(
+        key=lambda x:x[1],
+        reverse=True
+    )
+
+    my_rank = "圏外"
+
+    for i,(
+        uid,
+        _
+    ) in enumerate(
+        rank_data
+    ):
+
+        if uid == user:
+
+            my_rank = (
+                f"{i+1}位"
+            )
+
+            break
+
+    embed = discord.Embed(
+        title=(
+            f"👤 "
+            f"{interaction.user.name}"
+            f" のプロフィール"
+        ),
+        color=discord.Color.blue()
+    )
+
+    embed.add_field(
+        name="💰 所持金",
+        value=f"{coins}コイン"
+    )
+
+    embed.add_field(
+        name="🏆 順位",
+        value=my_rank
+    )
+
+    embed.add_field(
+        name="🌍 国",
+        value=(
+            f"{unique}種類"
+            f"/"
+            f"{total}個"
+        )
+    )
+
+    embed.add_field(
+        name="📈 コンプリート率",
+        value=f"{complete}%"
+    )
+
+    embed.set_footer(
+        text="Ballsdex Profile"
+    )
+
+    await interaction.response.send_message(
+        embed=embed
+    )
+
 # ===== 所持金 =====
 
 @bot.tree.command(
