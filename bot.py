@@ -726,7 +726,9 @@ async def collection(
     name="ranking",
     description="ランキングを見る"
 )
-async def ranking(interaction: discord.Interaction):
+async def ranking(
+    interaction: discord.Interaction
+):
 
     try:
 
@@ -750,25 +752,43 @@ async def ranking(interaction: discord.Interaction):
 
         for player in players:
 
-            owned = player.get(
-                "countries",
-                []
-            ) or []
+            count = len(
+                player.get(
+                    "countries",
+                    []
+                ) or []
+            )
 
-            count = len(owned)
+            user_id = int(
+                player["user_id"]
+            )
+
+            try:
+
+                discord_user = (
+                    await bot.fetch_user(
+                        user_id
+                    )
+                )
+
+                name = (
+                    discord_user.name
+                )
+
+            except:
+
+                name = "不明"
 
             ranking_data.append(
                 (
-                    str(player.get(
-                        "user_id",
-                        "不明"
-                    )),
+                    name,
+                    str(user_id),
                     count
                 )
             )
 
         ranking_data.sort(
-            key=lambda x: x[1],
+            key=lambda x:x[2],
             reverse=True
         )
 
@@ -780,21 +800,22 @@ async def ranking(interaction: discord.Interaction):
 
         lines = []
 
-        for i, (
-            user,
+        for i,(
+            name,
+            uid,
             count
         ) in enumerate(
             ranking_data[:10]
         ):
 
-            mark = (
+            rank = (
                 medals[i]
                 if i < 3
                 else f"{i+1}位"
             )
 
             lines.append(
-                f"{mark} {count}個"
+                f"{rank} {name} {count}個"
             )
 
         embed = discord.Embed(
@@ -807,7 +828,8 @@ async def ranking(interaction: discord.Interaction):
             interaction.user.id
         )
 
-        for i, (
+        for i,(
+            name,
             uid,
             count
         ) in enumerate(
@@ -817,12 +839,12 @@ async def ranking(interaction: discord.Interaction):
             if uid == my_id:
 
                 embed.set_footer(
-                    text=(
-                        f"あなたの順位:"
-                        f"{i+1}位 "
-                        f"({count}個)"
-                    )
+                    text=
+                    f"あなたの順位:"
+                    f"{i+1}位 "
+                    f"({count}個)"
                 )
+
                 break
 
         await interaction.response.send_message(
@@ -836,9 +858,53 @@ async def ranking(interaction: discord.Interaction):
         )
 
         await interaction.response.send_message(
-            "ランキング取得でエラーが発生しました",
+            "ランキング取得失敗",
             ephemeral=True
         )
+
+# ===== 所持金 =====
+
+@bot.tree.command(
+    name="money",
+    description="所持金を見る"
+)
+async def money_cmd(
+    interaction: discord.Interaction
+):
+
+    user = str(interaction.user.id)
+
+    result = (
+        supabase
+        .table("players")
+        .select("coins")
+        .eq(
+            "user_id",
+            user
+        )
+        .execute()
+    )
+
+    coins = 0
+
+    if result.data:
+        coins = (
+            result.data[0]
+            .get("coins", 0)
+        )
+
+    embed = discord.Embed(
+        title="💰 所持金",
+        description=(
+            f"{interaction.user.name}"
+            f" の所持金: {coins}コイン"
+        ),
+        color=discord.Color.green()
+    )
+
+    await interaction.response.send_message(
+        embed=embed
+    )
 
 # ===== デイリー =====
 
