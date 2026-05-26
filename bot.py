@@ -60,10 +60,11 @@ countries = {
             "にほん",
             "にっぽん"
         ],
+        "description":
+        "東アジアの島国。首都は東京。寿司やアニメで有名。",
         "image":
         "https://cdn.discordapp.com/attachments/1501419834913587220/1501559919487484055/by_fune.png"
-    },
-
+        },
     "usa": {
         "name": "アメリカ",
         "aliases": [
@@ -73,6 +74,8 @@ countries = {
             "米国",
             "あめりか"
         ],
+        "description":
+        "北アメリカの大国。首都はワシントンD.C。",
         "image":
         "https://cdn.discordapp.com/attachments/1501419834913587220/1507640185423401011/057bc90be89d4e6d.png"
     },
@@ -84,6 +87,8 @@ countries = {
             "フランス",
             "ふらんす"
         ],
+        "description":
+        "西ヨーロッパの国。首都はパリ。",
         "image":
         "https://cdn.discordapp.com/attachments/1501412582412521675/1501412628482887822/by_saito.png"
     },
@@ -97,6 +102,8 @@ countries = {
             "Federal Republic of Germany",
             "ドイツ連邦共和国"
         ],
+        "description":
+        "ヨーロッパ中央部の国。首都はベルリン。",
         "image":
         "https://cdn.discordapp.com/attachments/1501419834913587220/1508073723163574343/by_cake.png"
     },
@@ -110,6 +117,8 @@ countries = {
             "中華人民共和国",
             "People's Republic of China"
         ],
+        "description":
+        "東アジア最大級の国。首都は北京。14億という莫大な人口を抱えている。",
         "image":
         "https://cdn.discordapp.com/attachments/1501419834913587220/1501569328343158836/China_by_yuito.png"
     },
@@ -124,6 +133,8 @@ countries = {
             "かんこく",
             "南朝鮮"
         ],
+        "description":
+        "東アジアの国。首都はソウル。北朝鮮とは仲が悪い。",
         "image":
         "https://cdn.discordapp.com/attachments/1501419834913587220/1508444763614089378/bytank.png?ex=6a159029&is=6a143ea9&hm=e6de3834cfc4bacd451c52ab6900c566a1aaeba5d648f579ebd1543bb3360e8c&"
     },
@@ -136,6 +147,8 @@ countries = {
             "ろしあ",
             "Russian Federation"
         ],
+        "description":
+        "世界最大の面積を持つ国。ユーラシアとアジアをまたにかけた大国。首都はモスクワ。",
         "image":
         "https://cdn.discordapp.com/attachments/1501419834913587220/1508445951944036503/by_.png?ex=6a159144&is=6a143fc4&hm=077f5f2515119c128a9363dfbd93c08dbd573d5980752774e10f24933e4686b7&"
     }
@@ -922,6 +935,144 @@ async def ranking(
                 "ランキング取得失敗",
                 ephemeral=True
             )
+
+# ===== 国情報 =====
+
+from discord.ui import Select
+
+
+class CountrySelect(discord.ui.Select):
+
+    def __init__(self, owned):
+
+        unique = list(set(owned))
+
+        options = []
+
+        for key in unique:
+
+            if key not in countries:
+                continue
+
+            options.append(
+
+                discord.SelectOption(
+                    label=countries[key]["name"],
+                    value=key
+                )
+
+            )
+
+        super().__init__(
+            placeholder="国を選択",
+            options=options
+        )
+
+    async def callback(
+        self,
+        interaction: discord.Interaction
+    ):
+
+        country = self.values[0]
+
+        data = countries[country]
+
+        embed = discord.Embed(
+
+            title=f"🌍 {data['name']}",
+
+            description=data[
+                "description"
+            ],
+
+            color=discord.Color.blue()
+
+        )
+
+        embed.set_image(
+            url=data["image"]
+        )
+
+        await interaction.response.send_message(
+            embed=embed,
+            ephemeral=True
+        )
+
+
+class CountryInfoView(View):
+
+    def __init__(self, owned):
+
+        super().__init__(
+            timeout=60
+        )
+
+        self.add_item(
+            CountrySelect(
+                owned
+            )
+        )
+
+
+@bot.tree.command(
+    name="info",
+    description="持っている国の情報を見る"
+)
+async def info(
+    interaction: discord.Interaction
+):
+
+    user = str(
+        interaction.user.id
+    )
+
+    result = (
+        supabase
+        .table("players")
+        .select("countries")
+        .eq(
+            "user_id",
+            user
+        )
+        .execute()
+    )
+
+    if not result.data:
+
+        await interaction.response.send_message(
+            "まだ国を持っていません",
+            ephemeral=True
+        )
+        return
+
+    owned = (
+        result.data[0]
+        .get(
+            "countries",
+            []
+        )
+        or []
+    )
+
+    if not owned:
+
+        await interaction.response.send_message(
+            "まだ国を持っていません",
+            ephemeral=True
+        )
+        return
+
+    await interaction.response.send_message(
+
+        "見たい国を選んでください",
+
+        view=CountryInfoView(
+            owned
+        ),
+
+        ephemeral=True
+
+    )
 
 # ===== プロフィール =====
 
