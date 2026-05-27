@@ -498,6 +498,62 @@ async def on_message(message):
         message
     )
 
+# ===== 即時スポーン =====
+
+@bot.tree.command(
+    name="spawn",
+    description="管理者用 即時スポーン"
+)
+async def spawn(
+    interaction: discord.Interaction
+):
+
+    global current_answer
+    global spawn_time
+    global spawn_message
+
+    if not interaction.user.guild_permissions.administrator:
+
+        await interaction.response.send_message(
+            "管理者専用です",
+            ephemeral=True
+        )
+        return
+
+    if current_answer:
+
+        await interaction.response.send_message(
+            "すでに国が出現しています",
+            ephemeral=True
+        )
+        return
+
+    country = random.choice(
+        list(countries.keys())
+    )
+
+    current_answer = country
+    spawn_time = time.time()
+
+    embed = discord.Embed(
+        title="🌍 国を当てて！",
+        color=discord.Color.blue()
+    )
+
+    embed.set_image(
+        url=countries[country]["image"]
+    )
+
+    spawn_message = await interaction.channel.send(
+        embed=embed,
+        view=CatchView()
+    )
+
+    await interaction.response.send_message(
+        "即時スポーンしました",
+        ephemeral=True
+    )
+
 
 # ===== 自動スポーン =====
 
