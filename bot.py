@@ -1275,6 +1275,141 @@ async def money_cmd(
         embed=embed
     )
 
+# ===== コイン送金 =====
+
+@bot.tree.command(
+    name="give",
+    description="コインを送る"
+)
+async def give(
+    interaction: discord.Interaction,
+    member: discord.Member,
+    amount: int
+):
+
+    if member.bot:
+
+        await interaction.response.send_message(
+            "Botには送れません",
+            ephemeral=True
+        )
+        return
+
+    if member.id == interaction.user.id:
+
+        await interaction.response.send_message(
+            "自分には送れません",
+            ephemeral=True
+        )
+        return
+
+    if amount <= 0:
+
+        await interaction.response.send_message(
+            "1以上入力してください",
+            ephemeral=True
+        )
+        return
+
+    sender = str(interaction.user.id)
+    receiver = str(member.id)
+
+    sender_data = (
+        supabase
+        .table("players")
+        .select("*")
+        .eq("user_id", sender)
+        .execute()
+    )
+
+    if not sender_data.data:
+
+        await interaction.response.send_message(
+            "送れるコインがありません",
+            ephemeral=True
+        )
+        return
+
+    sender_player = sender_data.data[0]
+
+    money = sender_player.get(
+        "coins",
+        0
+    )
+
+    if money < amount:
+
+        await interaction.response.send_message(
+            "コイン不足です",
+            ephemeral=True
+        )
+        return
+
+    receiver_data = (
+        supabase
+        .table("players")
+        .select("*")
+        .eq("user_id", receiver)
+        .execute()
+    )
+
+    if receiver_data.data:
+
+        receiver_money = (
+            receiver_data.data[0]
+            .get("coins", 0)
+        )
+
+        supabase.table(
+            "players"
+        ).update({
+
+            "coins":
+            receiver_money
+            + amount
+
+        }).eq(
+            "user_id",
+            receiver
+        ).execute()
+
+    else:
+
+        supabase.table(
+            "players"
+        ).insert({
+
+            "user_id":
+            receiver,
+
+            "coins":
+            amount,
+
+            "countries":
+            []
+
+        }).execute()
+
+    supabase.table(
+        "players"
+    ).update({
+
+        "coins":
+        money - amount
+
+    }).eq(
+        "user_id",
+        sender
+    ).execute()
+
+    await interaction.response.send_message(
+
+        f"💸 {interaction.user.mention} → "
+        f"{member.mention}\n"
+        f"{amount}コイン送金しました！"
+
+    )
+
 # ===== デイリー =====
 
 @bot.tree.command(
