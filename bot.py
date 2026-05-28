@@ -594,7 +594,8 @@ async def auto_spawn():
 
         now = time.time()
 
-        # 時間切れ処理
+        # ===== 時間切れ =====
+
         if (
             current_answer is not None
             and spawn_time is not None
@@ -605,23 +606,31 @@ async def auto_spawn():
                 f"{current_answer} 時間切れ"
             )
 
-            current_answer = None
-            spawn_time = None
-
             if spawn_message:
 
-                view = CatchView()
+                try:
 
-                for child in view.children:
-                    child.disabled = True
+                    view = CatchView()
 
-                await spawn_message.edit(
-                    view=view
-                )
+                    for child in view.children:
+                        child.disabled = True
 
-                spawn_message = None
+                    await spawn_message.edit(
+                        view=view
+                    )
 
-        # 新規スポーン
+                except Exception as e:
+
+                    print(
+                        f"メッセージ無効化失敗: {e}"
+                    )
+
+            current_answer = None
+            spawn_time = None
+            spawn_message = None
+
+        # ===== 新規スポーン =====
+
         if current_answer is None:
 
             country = random.choice(
@@ -1599,36 +1608,33 @@ async def daily(
 @bot.event
 async def on_ready():
 
-    print(
-        "起動完了"
-    )
+    global current_answer
+    global spawn_time
+    global spawn_message
+
+    current_answer = None
+    spawn_time = None
+    spawn_message = None
+
+    print("起動完了")
 
     await bot.change_presence(
-
-        activity=
-        discord.Game(
-            "国当てゲーム"
-        )
-
+        activity=discord.Game("国当てゲーム")
     )
 
     await bot.tree.sync()
 
+    # 起動直後に即スポーン
+    await auto_spawn()
+
+    # 10分ループ開始
     if not auto_spawn.is_running():
 
         auto_spawn.start()
 
-        print(
-            "auto_spawn開始"
-        )
+        print("auto_spawn開始")
 
-    print(
-
-        f"ログイン:"
-        f"{bot.user}"
-
-    )
-
+    print(f"ログイン:{bot.user}")
 
 keep_alive()
 
