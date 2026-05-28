@@ -602,9 +602,7 @@ async def auto_spawn():
             and now - spawn_time >= 1200
         ):
 
-            print(
-                f"{current_answer} 時間切れ"
-            )
+            print(f"{current_answer} 時間切れ")
 
             if spawn_message:
 
@@ -621,13 +619,53 @@ async def auto_spawn():
 
                 except Exception as e:
 
-                    print(
-                        f"メッセージ無効化失敗: {e}"
-                    )
+                    print(f"ボタン無効化失敗: {e}")
 
             current_answer = None
             spawn_time = None
             spawn_message = None
+
+        # ===== 新規スポーン =====
+
+        if current_answer is None:
+
+            country = random.choice(
+                list(countries.keys())
+            )
+
+            current_answer = country
+            spawn_time = now
+
+            channel = await bot.fetch_channel(
+                1500806594458550302
+            )
+
+            embed = discord.Embed(
+                title="🌍 国を当てて！",
+                color=discord.Color.blue()
+            )
+
+            embed.set_image(
+                url=countries[country]["image"]
+            )
+
+            spawn_message = await channel.send(
+                embed=embed,
+                view=CatchView()
+            )
+
+            print(f"{country} を出現")
+
+        else:
+
+            print(
+                f"スポーンスキップ "
+                f"current_answer={current_answer}"
+            )
+
+    except Exception as e:
+
+        print(f"auto_spawnエラー: {e}")
 
         # ===== 新規スポーン =====
 
@@ -1612,27 +1650,32 @@ async def on_ready():
     global spawn_time
     global spawn_message
 
+    print("起動完了")
+
+    # 強制リセット
     current_answer = None
     spawn_time = None
     spawn_message = None
-
-    print("起動完了")
 
     await bot.change_presence(
         activity=discord.Game("国当てゲーム")
     )
 
-    await bot.tree.sync()
+    try:
+        synced = await bot.tree.sync()
+        print(f"スラッシュ同期: {len(synced)}")
+    except Exception as e:
+        print(f"syncエラー: {e}")
 
-    # 起動直後に即スポーン
-    await auto_spawn()
-
-    # 10分ループ開始
+    # auto_spawn開始
     if not auto_spawn.is_running():
 
         auto_spawn.start()
 
         print("auto_spawn開始")
+
+        # 起動直後スポーン
+        await auto_spawn()
 
     print(f"ログイン:{bot.user}")
 
