@@ -502,6 +502,82 @@ async def on_message(message):
 
 # ===== 即時スポーン =====
 
+@bot.tree.command(
+    name="spawn",
+    description="管理者用 即時スポーン"
+)
+async def spawn(
+    interaction: discord.Interaction
+):
+
+    global current_answer
+    global spawn_time
+    global spawn_message
+
+    if not interaction.user.guild_permissions.administrator:
+
+        await interaction.response.send_message(
+            "管理者専用です",
+            ephemeral=True
+        )
+        return
+
+    if current_answer:
+
+        await interaction.response.send_message(
+            "すでに国が出現しています",
+            ephemeral=True
+        )
+        return
+
+    country = random.choice(
+        list(countries.keys())
+    )
+
+    current_answer = country
+    spawn_time = time.time()
+
+    try:
+
+        channel = interaction.channel
+
+        embed = discord.Embed(
+            title="🌍 国を当てて！",
+            color=discord.Color.blue()
+        )
+
+        embed.set_image(
+            url=countries[country]["image"]
+        )
+
+        spawn_message = await channel.send(
+            embed=embed,
+            view=CatchView()
+        )
+
+        await interaction.response.send_message(
+            "即時スポーンしました",
+            ephemeral=True
+        )
+
+        print(
+            f"{country} を即時スポーン"
+        )
+
+    except Exception as e:
+
+        print(
+            f"spawnエラー: {e}"
+        )
+
+        await interaction.response.send_message(
+            "スポーン失敗",
+            ephemeral=True
+        )
+
+
+# ===== 自動スポーン =====
+
 @tasks.loop(seconds=600)
 async def auto_spawn():
 
@@ -511,22 +587,18 @@ async def auto_spawn():
 
     print(
         f"auto_spawn実行 "
-        f"current_answer="
-        f"{current_answer}"
+        f"current_answer={current_answer}"
     )
 
     try:
 
         now = time.time()
 
+        # 時間切れ処理
         if (
-
             current_answer is not None
-            and
-            spawn_time is not None
-            and
-            now - spawn_time >= 1200
-
+            and spawn_time is not None
+            and now - spawn_time >= 1200
         ):
 
             print(
@@ -549,6 +621,7 @@ async def auto_spawn():
 
                 spawn_message = None
 
+        # 新規スポーン
         if current_answer is None:
 
             country = random.choice(
@@ -585,120 +658,6 @@ async def auto_spawn():
         print(
             f"auto_spawnエラー: {e}"
         )
-
-
-# ===== 自動スポーン =====
-
-@tasks.loop(
-    seconds=600
-)
-async def auto_spawn():
-
-    global current_answer
-    global spawn_time
-    global spawn_message
-
-    print(
-        f"auto_spawn実行 "
-        f"current_answer="
-        f"{current_answer}"
-    )
-
-    try:
-
-        now = time.time()
-
-        if (
-
-            current_answer
-            is not None
-
-            and
-
-            spawn_time
-            is not None
-
-            and
-
-            now - spawn_time
-            >= 1200
-
-        ):
-
-            print(
-                f"{current_answer}"
-                " 時間切れ"
-            )
-
-            current_answer = None
-            spawn_time = None
-
-            if spawn_message:
-
-                view = CatchView()
-
-                for child in view.children:
-                    child.disabled = True
-
-                await spawn_message.edit(
-                    view=view
-                )
-
-                spawn_message = None
-
-if current_answer is None:
-
-    country = random.choice(
-        list(
-            countries.keys()
-        )
-    )
-
-    current_answer = country
-    spawn_time = now
-
-    try:
-
-    channel = await bot.fetch_channel(
-    1500806594458550302
-    )
-
-        embed = discord.Embed(
-            title="🌍 国を当てて！",
-            color=discord.Color.blue()
-        )
-
-        embed.set_image(
-            url=countries[
-                country
-            ]["image"]
-        )
-
-        spawn_message = (
-            await channel.send(
-                embed=embed,
-                view=CatchView()
-            )
-        )
-
-        print(
-            f"{country} を出現"
-        )
-
-    except Exception as e:
-
-        print(
-            f"チャンネル取得失敗: {e}"
-        )
-
-@auto_spawn.before_loop
-async def before_auto_spawn():
-
-    await bot.wait_until_ready()
-
-    print(
-        "auto_spawn準備完了"
-    )
 
 # ===== コレクション =====
 
