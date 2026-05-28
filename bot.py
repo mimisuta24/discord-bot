@@ -502,59 +502,89 @@ async def on_message(message):
 
 # ===== 即時スポーン =====
 
-@bot.tree.command(
-    name="spawn",
-    description="管理者用 即時スポーン"
-)
-async def spawn(
-    interaction: discord.Interaction
-):
+@tasks.loop(seconds=600)
+async def auto_spawn():
 
     global current_answer
     global spawn_time
     global spawn_message
 
-    if not interaction.user.guild_permissions.administrator:
+    print(
+        f"auto_spawn実行 "
+        f"current_answer="
+        f"{current_answer}"
+    )
 
-        await interaction.response.send_message(
-            "管理者専用です",
-            ephemeral=True
+    try:
+
+        now = time.time()
+
+        if (
+
+            current_answer is not None
+            and
+            spawn_time is not None
+            and
+            now - spawn_time >= 1200
+
+        ):
+
+            print(
+                f"{current_answer} 時間切れ"
+            )
+
+            current_answer = None
+            spawn_time = None
+
+            if spawn_message:
+
+                view = CatchView()
+
+                for child in view.children:
+                    child.disabled = True
+
+                await spawn_message.edit(
+                    view=view
+                )
+
+                spawn_message = None
+
+        if current_answer is None:
+
+            country = random.choice(
+                list(countries.keys())
+            )
+
+            current_answer = country
+            spawn_time = now
+
+            channel = await bot.fetch_channel(
+                1500806594458550302
+            )
+
+            embed = discord.Embed(
+                title="🌍 国を当てて！",
+                color=discord.Color.blue()
+            )
+
+            embed.set_image(
+                url=countries[country]["image"]
+            )
+
+            spawn_message = await channel.send(
+                embed=embed,
+                view=CatchView()
+            )
+
+            print(
+                f"{country} を出現"
+            )
+
+    except Exception as e:
+
+        print(
+            f"auto_spawnエラー: {e}"
         )
-        return
-
-    if current_answer:
-
-        await interaction.response.send_message(
-            "すでに国が出現しています",
-            ephemeral=True
-        )
-        return
-
-    country = random.choice(
-        list(countries.keys())
-    )
-
-    current_answer = country
-    spawn_time = time.time()
-
-    embed = discord.Embed(
-        title="🌍 国を当てて！",
-        color=discord.Color.blue()
-    )
-
-    embed.set_image(
-        url=countries[country]["image"]
-    )
-
-    spawn_message = await interaction.channel.send(
-        embed=embed,
-        view=CatchView()
-    )
-
-    await interaction.response.send_message(
-        "即時スポーンしました",
-        ephemeral=True
-    )
 
 
 # ===== 自動スポーン =====
