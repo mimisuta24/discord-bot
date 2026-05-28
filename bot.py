@@ -32,7 +32,9 @@ def keep_alive():
 # ===== Discord設定 =====
 
 intents = discord.Intents.default()
+
 intents.message_content = True
+intents.guilds = True
 
 bot = commands.Bot(
     command_prefix="!",
@@ -614,53 +616,50 @@ async def auto_spawn():
 
                 spawn_message = None
 
-        if current_answer is None:
+if current_answer is None:
 
-            country = random.choice(
-                list(
-                    countries.keys()
-                )
+    country = random.choice(
+        list(
+            countries.keys()
+        )
+    )
+
+    current_answer = country
+    spawn_time = now
+
+    try:
+
+    channel = await bot.fetch_channel(
+    1500806594458550302
+    )
+
+        embed = discord.Embed(
+            title="🌍 国を当てて！",
+            color=discord.Color.blue()
+        )
+
+        embed.set_image(
+            url=countries[
+                country
+            ]["image"]
+        )
+
+        spawn_message = (
+            await channel.send(
+                embed=embed,
+                view=CatchView()
             )
+        )
 
-            current_answer = country
-            spawn_time = now
-
-            channel = bot.get_channel(
-                1500806594458550302
-            )
-
-            if channel:
-
-                embed = discord.Embed(
-                    title="🌍 国を当てて！",
-                    color=discord.Color.blue()
-                )
-
-                embed.set_image(
-                    url=countries[
-                        country
-                    ]["image"]
-                )
-
-                spawn_message = (
-                    await channel.send(
-                        embed=embed,
-                        view=CatchView()
-                    )
-                )
-
-                print(
-                    f"{country}"
-                    " を出現"
-                )
+        print(
+            f"{country} を出現"
+        )
 
     except Exception as e:
 
         print(
-            f"auto_spawnエラー:"
-            f"{e}"
+            f"チャンネル取得失敗: {e}"
         )
-
 
 @auto_spawn.before_loop
 async def before_auto_spawn():
