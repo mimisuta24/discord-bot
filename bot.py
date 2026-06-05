@@ -594,8 +594,7 @@ async def auto_spawn():
 
         now = time.time()
 
-        # ===== 時間切れ =====
-
+        # 時間切れ
         if (
             current_answer is not None
             and spawn_time is not None
@@ -606,27 +605,20 @@ async def auto_spawn():
 
             if spawn_message:
 
-                try:
+                view = CatchView()
 
-                    view = CatchView()
+                for child in view.children:
+                    child.disabled = True
 
-                    for child in view.children:
-                        child.disabled = True
-
-                    await spawn_message.edit(
-                        view=view
-                    )
-
-                except Exception as e:
-
-                    print(f"ボタン無効化失敗: {e}")
+                await spawn_message.edit(
+                    view=view
+                )
 
             current_answer = None
             spawn_time = None
             spawn_message = None
 
-        # ===== 新規スポーン =====
-
+        # 新規スポーン
         if current_answer is None:
 
             country = random.choice(
@@ -666,45 +658,6 @@ async def auto_spawn():
     except Exception as e:
 
         print(f"auto_spawnエラー: {e}")
-
-        # ===== 新規スポーン =====
-
-        if current_answer is None:
-
-            country = random.choice(
-                list(countries.keys())
-            )
-
-            current_answer = country
-            spawn_time = now
-
-            channel = await bot.fetch_channel(
-                1500806594458550302
-            )
-
-            embed = discord.Embed(
-                title="🌍 国を当てて！",
-                color=discord.Color.blue()
-            )
-
-            embed.set_image(
-                url=countries[country]["image"]
-            )
-
-            spawn_message = await channel.send(
-                embed=embed,
-                view=CatchView()
-            )
-
-            print(
-                f"{country} を出現"
-            )
-
-    except Exception as e:
-
-        print(
-            f"auto_spawnエラー: {e}"
-        )
 
 # ===== コレクション =====
 
@@ -1652,7 +1605,6 @@ async def on_ready():
 
     print("起動完了")
 
-    # 強制リセット
     current_answer = None
     spawn_time = None
     spawn_message = None
@@ -1662,20 +1614,24 @@ async def on_ready():
     )
 
     try:
-        synced = await bot.tree.sync()
-        print(f"スラッシュ同期: {len(synced)}")
-    except Exception as e:
-        print(f"syncエラー: {e}")
 
-    # auto_spawn開始
+        synced = await bot.tree.sync()
+
+        print(
+            f"スラッシュ同期: {len(synced)}"
+        )
+
+    except Exception as e:
+
+        print(
+            f"syncエラー: {e}"
+        )
+
     if not auto_spawn.is_running():
 
         auto_spawn.start()
 
         print("auto_spawn開始")
-
-        # 起動直後スポーン
-        await auto_spawn()
 
     print(f"ログイン:{bot.user}")
 
