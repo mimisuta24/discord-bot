@@ -46,6 +46,8 @@ bot = commands.Bot(
 
 url = os.getenv("SUPABASE_URL")
 key = os.getenv("SUPABASE_KEY")
+print("SUPABASE_URL =", url)
+print("SUPABASE_KEYあり =", bool(key))
 
 supabase = create_client(url, key)
 
@@ -1637,12 +1639,10 @@ async def on_ready():
 
 keep_alive()
 
-print(
-    "起動開始"
-)
+print("起動開始")
+
+print("TOKEN =", os.getenv("TOKEN"))
 
 bot.run(
-    os.getenv(
-        "TOKEN"
-    )
+    os.getenv("TOKEN")
 )
